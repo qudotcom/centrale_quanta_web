@@ -4,16 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Centrale Quanta | Space-Time</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
+    
+    <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
+    
     <nav>
         <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
             <div style="font-weight: bold; font-size: 1.2rem; color: var(--primary); text-shadow: var(--glow);">
-                [ CENTRALE QUANTA ]
+                <a href="/" style="color: var(--primary);">[ CENTRALE QUANTA ]</a>
             </div>
+            
             <ul>
                 <li><a href="/">:: HOME ::</a></li>
+                <li><a href="/about">:: CLUB_DATA ::</a></li>
                 <li><a href="/tournament/bracket">:: TOURNAMENT ::</a></li>
                 <li><a href="/auth/login">:: LOGIN ::</a></li>
                 <li><a href="/auth/register">:: JOIN ::</a></li>
@@ -25,8 +29,10 @@
         {% block content %}{% endblock %}
     </main>
     
-    <footer style="text-align: center; margin-top: 50px; color: var(--primary-dim); font-size: 0.8rem;">
-        &copy; 2025 Centrale Quanta. Rendering Quantum State...
+    <footer style="text-align: center; margin-top: 50px; padding-bottom: 20px; color: var(--primary-dim); font-size: 0.8rem;">
+        &copy; 2025 Centrale Quanta. Rendering Quantum State... <br>
+        <small>[ SYSTEM STATUS: STABLE ]</small>
     </footer>
+
 </body>
 </html>
