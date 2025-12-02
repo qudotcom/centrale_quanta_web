@@ -1,1 +1,145 @@
+{% extends "base.html" %}
 
+{% block content %}
+<div class="game-container">
+    
+    <div class="terminal-window">
+        <div class="term-header">
+            <span>>> QUANTUM_SIMULATION_LINK: MATCH #{{ match.id }}</span>
+            <span class="status-blink">LIVE</span>
+        </div>
+        <div class="term-body">
+            <pre id="quantum-board">{{ board_visual }}</pre>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <div class="player-info">
+            <div class="p1">WHITE: {{ match.player1.username }}</div>
+            <div class="p2">BLACK: {{ match.player2.username }}</div>
+        </div>
+
+        <div class="command-line">
+            <label for="move-input">ENTER COORDINATES:</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="move-input" placeholder="e.g. e2e4 or a1c3^" autofocus>
+                <button onclick="submitMove()" class="btn">EXECUTE</button>
+            </div>
+            <small style="color: var(--primary-dim);">Use ^ for split moves (e.g. b1a3^b1c3)</small>
+        </div>
+
+        <div class="logs" id="game-logs">
+            <div>> System Initialized...</div>
+            <div>> Waiting for input...</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    async function submitMove() {
+        const input = document.getElementById('move-input');
+        const logPanel = document.getElementById('game-logs');
+        const move = input.value;
+
+        if (!move) return;
+
+        // Log the attempt
+        logPanel.innerHTML += `<div>> Attempting move: ${move}...</div>`;
+
+        try {
+            // NOTE: You need to ensure the router has a POST endpoint for this!
+            // We assume /tournament/move/{match_id} exists.
+            const response = await fetch(`/tournament/move/{{ match.id }}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ move_str: move })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update the board visually
+                document.getElementById('quantum-board').innerText = data.new_board;
+                logPanel.innerHTML += `<div style="color: #fff;">> MOVE SUCCESS. State Updated.</div>`;
+                input.value = ''; // Clear input
+            } else {
+                logPanel.innerHTML += `<div style="color: red;">> ERROR: ${data.message}</div>`;
+            }
+        } catch (error) {
+            logPanel.innerHTML += `<div style="color: red;">> CONNECTION FAILURE</div>`;
+        }
+        
+        // Auto scroll logs
+        logPanel.scrollTop = logPanel.scrollHeight;
+    }
+</script>
+
+<style>
+    .game-container {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 2rem;
+        margin-top: 1rem;
+    }
+
+    /* Terminal Styling */
+    .terminal-window {
+        border: 1px solid var(--primary);
+        background: rgba(0, 10, 0, 0.9);
+        box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+    }
+
+    .term-header {
+        background: var(--primary-dim);
+        color: black;
+        padding: 5px 10px;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .term-body {
+        padding: 1rem;
+        overflow: auto;
+        min-height: 400px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    pre {
+        font-family: 'Courier New', monospace;
+        font-size: 14px; /* Adjust based on ASCII size */
+        line-height: 14px;
+        color: var(--primary);
+        font-weight: bold;
+    }
+
+    /* Control Panel */
+    .control-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .player-info {
+        border: 1px solid var(--primary-dim);
+        padding: 1rem;
+    }
+
+    .logs {
+        border: 1px dashed var(--primary-dim);
+        height: 200px;
+        overflow-y: auto;
+        padding: 0.5rem;
+        font-size: 0.8rem;
+        color: var(--primary-dim);
+        background: rgba(0,0,0,0.5);
+    }
+
+    .status-blink {
+        animation: blink 1s infinite;
+    }
+</style>
+{% endblock %}
