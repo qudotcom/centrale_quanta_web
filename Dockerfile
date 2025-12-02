@@ -1,24 +1,24 @@
-# 1. Use an official lightweight Python image
+# 1. Base Image
 FROM python:3.10-slim
 
-# 2. Set working directory inside the container
+# 2. Install Git
 WORKDIR /app
-
-# 3. Install git (Required for installing Google's 'unitary' library from GitHub)
-# We also clean up the apt cache afterwards to keep the image size small.
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
-# 4. Copy requirements file first (This leverages Docker caching for faster builds)
+# 3. Install Dependencies First
 COPY requirements.txt .
-
-# 5. Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 6. Copy the rest of the application code
+# 4. --- THE REAL GAME FIX ---
+# Clone the Google Unitary repository manually
+RUN git clone https://github.com/quantumlib/unitary.git /app/google_quantum_lib
+
+# Add the cloned folder to Python's search path so "import unitary" works
+ENV PYTHONPATH="${PYTHONPATH}:/app/google_quantum_lib"
+
+# 5. Copy your app code
 COPY . .
 
-# 7. Expose the port the app runs on
+# 6. Run
 EXPOSE 8000
-
-# 8. Command to run the application using Uvicorn
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
