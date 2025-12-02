@@ -1,1 +1,35 @@
+{% extends "base.html" %}
 
+{% block content %}
+<div style="display: flex; justify-content: center;">
+    <article style="width: 100%; max-width: 400px;">
+        <header style="border-bottom: 1px solid var(--primary-dim); margin-bottom: 1rem; padding-bottom: 0.5rem;">
+            <h3>> AUTH_SEQUENCE</h3>
+        </header>
+        
+        {% if error %}
+        <div style="color: red; border: 1px solid red; padding: 10px; margin-bottom: 10px; background: rgba(255,0,0,0.1);">
+            ! ERROR: {{ error }}
+        </div>
+        {% endif %}
+
+        <form action="/auth/login" method="post">
+            <div style="margin-bottom: 1rem;">
+                <label for="username">USER_ID</label>
+                <input type="text" id="username" name="username" placeholder="Enter username..." required>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+                <label for="password">ACCESS_KEY</label>
+                <input type="password" id="password" name="password" placeholder="Enter password..." required>
+            </div>
+
+            <button type="submit" style="width: 100%;">INITIALIZE SESSION</button>
+        </form>
+        
+        <div style="margin-top: 1rem; text-align: center; font-size: 0.9rem;">
+            <a href="/auth/register">>> Request New Clearance (Register)</a>
+        </div>
+    </article>
+</div>
+{% endblock %}
