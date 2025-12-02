@@ -1,1 +1,123 @@
+:root {
+    --primary: #00ff41;        /* Matrix Green */
+    --primary-dim: #008F11;    /* Darker Green */
+    --background: #000000;     /* Deep Space Black */
+    --grid-color: rgba(0, 255, 65, 0.15);
+    --text-color: #e0e0e0;
+    --glow: 0 0 10px rgba(0, 255, 65, 0.7);
+}
 
+body {
+    background-color: var(--background);
+    color: var(--text-color);
+    font-family: 'Courier New', Courier, monospace; /* Terminal vibe */
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    
+    /* THE SPACE-TIME FABRIC EFFECT */
+    background-image: 
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: 40px 40px; /* Size of the grid squares */
+    background-position: center top;
+}
+
+/* Add a slight vignette to make it look like a CRT monitor or deep space */
+body::after {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background: radial-gradient(circle, transparent 40%, black 100%);
+    pointer-events: none; /* Let clicks pass through */
+    z-index: -1;
+}
+
+/* Typography */
+h1, h2, h3, h4 {
+    color: var(--primary);
+    text-shadow: var(--glow);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+a {
+    color: var(--primary);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+a:hover {
+    color: #fff;
+    text-shadow: 0 0 20px var(--primary);
+}
+
+/* Buttons (Quantum Nodes) */
+button, .btn {
+    background: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    padding: 10px 20px;
+    font-family: inherit;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 0 5px var(--primary-dim);
+    transition: all 0.2s;
+}
+
+button:hover, .btn:hover {
+    background: var(--primary);
+    color: black;
+    box-shadow: 0 0 20px var(--primary);
+}
+
+/* Forms & Inputs */
+input {
+    background: rgba(0, 20, 0, 0.8);
+    border: 1px solid var(--primary-dim);
+    color: var(--primary);
+    padding: 10px;
+    width: 100%;
+    font-family: inherit;
+    box-sizing: border-box; /* Fixes padding width issues */
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: var(--glow);
+}
+
+/* Layout Containers */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    position: relative;
+    z-index: 1; /* Above the vignette */
+}
+
+/* Card Style for Login/Register */
+article {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--primary-dim);
+    padding: 2rem;
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.1);
+    margin-top: 2rem;
+}
+
+/* Navbar */
+nav {
+    border-bottom: 1px solid var(--primary-dim);
+    padding: 1rem 0;
+    background: rgba(0,0,0,0.9);
+}
+
+nav ul {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    padding: 0;
+    margin: 0;
+}
