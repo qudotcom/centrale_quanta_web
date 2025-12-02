@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div id="game-data" data-match-id="{{ match.id }}" style="display: none;"></div>
+
 <div class="game-container">
     
     <div class="terminal-window">
@@ -22,7 +24,7 @@
         <div class="command-line">
             <label for="move-input">ENTER COORDINATES:</label>
             <div style="display: flex; gap: 10px;">
-                <input type="text" id="move-input" placeholder="e.g. e2e4 or a1c3^" autofocus>
+                <input type="text" id="move-input" placeholder="e.g. e2e4 or a1c3^" autofocus autocomplete="off">
                 <button onclick="submitMove()" class="btn">EXECUTE</button>
             </div>
             <small style="color: var(--primary-dim);">Use ^ for split moves (e.g. b1a3^b1c3)</small>
@@ -36,44 +38,7 @@
 
 </div>
 
-<script>
-    async function submitMove() {
-        const input = document.getElementById('move-input');
-        const logPanel = document.getElementById('game-logs');
-        const move = input.value;
-
-        if (!move) return;
-
-        // Log the attempt
-        logPanel.innerHTML += `<div>> Attempting move: ${move}...</div>`;
-
-        try {
-            // NOTE: You need to ensure the router has a POST endpoint for this!
-            // We assume /tournament/move/{match_id} exists.
-            const response = await fetch(`/tournament/move/{{ match.id }}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ move_str: move })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                // Update the board visually
-                document.getElementById('quantum-board').innerText = data.new_board;
-                logPanel.innerHTML += `<div style="color: #fff;">> MOVE SUCCESS. State Updated.</div>`;
-                input.value = ''; // Clear input
-            } else {
-                logPanel.innerHTML += `<div style="color: red;">> ERROR: ${data.message}</div>`;
-            }
-        } catch (error) {
-            logPanel.innerHTML += `<div style="color: red;">> CONNECTION FAILURE</div>`;
-        }
-        
-        // Auto scroll logs
-        logPanel.scrollTop = logPanel.scrollHeight;
-    }
-</script>
+<script src="{{ url_for('static', path='/js/game_client.js') }}"></script>
 
 <style>
     .game-container {
@@ -83,7 +48,6 @@
         margin-top: 1rem;
     }
 
-    /* Terminal Styling */
     .terminal-window {
         border: 1px solid var(--primary);
         background: rgba(0, 10, 0, 0.9);
@@ -110,13 +74,12 @@
 
     pre {
         font-family: 'Courier New', monospace;
-        font-size: 14px; /* Adjust based on ASCII size */
+        font-size: 14px;
         line-height: 14px;
         color: var(--primary);
         font-weight: bold;
     }
 
-    /* Control Panel */
     .control-panel {
         display: flex;
         flex-direction: column;
