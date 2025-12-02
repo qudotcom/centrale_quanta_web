@@ -1,1 +1,143 @@
+{% extends "base.html" %}
 
+{% block content %}
+<div style="text-align: center; margin-bottom: 2rem;">
+    <h2>> TOURNAMENT_LATTICE</h2>
+    <div style="font-size: 0.8rem; color: var(--primary-dim);">
+        [ MONITORING QUANTUM STATES ]
+    </div>
+</div>
+
+<div style="margin-bottom: 3rem; padding: 1rem; border: 1px dashed var(--primary-dim); text-align: center;">
+    <h4 style="margin: 0 0 1rem 0;">:: SYSTEM OVERRIDE ::</h4>
+    <form action="/tournament/generate" method="post">
+        <button type="submit" class="btn">INITIALIZE RANDOM MATCHMAKING</button>
+    </form>
+    <small style="color: #666;">Warning: This will reset the current timeline.</small>
+</div>
+
+{% if not matches %}
+    <div style="text-align: center; padding: 3rem; border: 1px solid var(--primary-dim);">
+        <p>NO ACTIVE SIMULATION FOUND.</p>
+        <p>Please initialize the matchmaking sequence above.</p>
+    </div>
+{% else %}
+
+    <div class="bracket-grid">
+        {% for match in matches %}
+        <div class="match-card">
+            <div class="match-header">MATCH ID: #{{ match.id }}</div>
+            
+            <div class="players">
+                <div class="player p1">
+                    <span class="p-label">ENTITY A:</span>
+                    <span class="p-name">{{ match.player1.username }}</span>
+                </div>
+                
+                <div class="vs-badge">VS</div>
+                
+                <div class="player p2">
+                    <span class="p-label">ENTITY B:</span>
+                    <span class="p-name">{{ match.player2.username }}</span>
+                </div>
+            </div>
+
+            <div class="match-actions">
+                {% if match.is_active %}
+                    <a href="/tournament/play/{{ match.id }}" class="btn-glitch">
+                        >> ENTER SIMULATION
+                    </a>
+                {% else %}
+                    <span style="color: var(--primary-dim);">[ SEQUENCE COMPLETE ]</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+{% endif %}
+
+<style>
+    .bracket-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    .match-card {
+        background: rgba(0, 20, 0, 0.6);
+        border: 1px solid var(--primary);
+        padding: 1.5rem;
+        position: relative;
+        transition: transform 0.3s;
+    }
+
+    .match-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0 15px var(--primary-dim);
+    }
+
+    .match-header {
+        position: absolute;
+        top: -10px;
+        left: 10px;
+        background: black;
+        padding: 0 10px;
+        font-size: 0.7rem;
+        border: 1px solid var(--primary-dim);
+        color: var(--primary-dim);
+    }
+
+    .players {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin: 1.5rem 0;
+    }
+
+    .player {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--primary-dim);
+        padding-bottom: 5px;
+    }
+
+    .p-label {
+        font-size: 0.7rem;
+        opacity: 0.7;
+    }
+
+    .p-name {
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+
+    .vs-badge {
+        text-align: center;
+        font-weight: bold;
+        color: var(--primary-dim);
+        font-size: 0.8rem;
+        letter-spacing: 3px;
+    }
+
+    .match-actions {
+        text-align: center;
+        margin-top: 1rem;
+    }
+
+    .btn-glitch {
+        display: inline-block;
+        border: 1px solid var(--primary);
+        padding: 8px 20px;
+        color: var(--primary);
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+    
+    .btn-glitch:hover {
+        background: var(--primary);
+        color: black;
+        box-shadow: 0 0 10px var(--primary);
+    }
+</style>
+{% endblock %}
