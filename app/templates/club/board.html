@@ -1,1 +1,136 @@
+{% extends "base.html" %}
 
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+    
+    <div style="border-bottom: 2px solid var(--primary); margin-bottom: 2rem; padding-bottom: 1rem;">
+        <h2>> CLUB_MANIFEST</h2>
+        <p style="color: var(--primary-dim);">// CENTRALE QUANTA PERSONNEL & LOGS</p>
+    </div>
+
+    <h3 style="margin-bottom: 1.5rem;">:: HIGH COUNCIL (Board Members) ::</h3>
+    <div class="members-grid">
+        {% for member in members %}
+        <div class="member-card">
+            <div class="card-header">
+                <span class="role-badge">{{ member.role }}</span>
+            </div>
+            <div class="card-body">
+                <div class="avatar-placeholder">
+                    [ IMG_NOT_FOUND ]
+                </div>
+                <h4>{{ member.name }}</h4>
+                <p class="bio">"{{ member.bio }}"</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <h3 style="margin-top: 4rem; margin-bottom: 1.5rem;">:: MISSION LOGS (Activities) ::</h3>
+    <div class="activities-list">
+        {% for activity in activities %}
+        <div class="activity-row">
+            <div class="date-stamp">{{ activity.date }}</div>
+            <div class="activity-details">
+                <div class="activity-title">{{ activity.title }}</div>
+                <div class="activity-desc">{{ activity.description }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<style>
+    /* Grid for Members */
+    .members-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 2rem;
+    }
+
+    .member-card {
+        border: 1px solid var(--primary-dim);
+        background: rgba(0, 10, 0, 0.5);
+        transition: 0.3s;
+    }
+
+    .member-card:hover {
+        border-color: var(--primary);
+        box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+    }
+
+    .card-header {
+        background: var(--primary-dim);
+        color: black;
+        padding: 5px 10px;
+        text-align: right;
+        font-weight: bold;
+        font-size: 0.8rem;
+    }
+
+    .card-body {
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .avatar-placeholder {
+        width: 80px;
+        height: 80px;
+        border: 1px dashed var(--primary);
+        margin: 0 auto 1rem auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        color: var(--primary-dim);
+        border-radius: 50%;
+    }
+
+    .bio {
+        font-style: italic;
+        color: #aaa;
+        font-size: 0.9rem;
+        margin-top: 10px;
+    }
+
+    /* List for Activities */
+    .activity-row {
+        display: flex;
+        gap: 2rem;
+        border-left: 2px solid var(--primary-dim);
+        padding-left: 1.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+    }
+
+    .activity-row::before {
+        content: "";
+        position: absolute;
+        left: -6px;
+        top: 0;
+        width: 10px;
+        height: 10px;
+        background: black;
+        border: 2px solid var(--primary);
+        border-radius: 50%;
+    }
+
+    .date-stamp {
+        font-family: 'Courier New', monospace;
+        color: var(--primary);
+        font-weight: bold;
+        min-width: 100px;
+    }
+
+    .activity-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+
+    .activity-desc {
+        color: #ccc;
+    }
+</style>
+{% endblock %}
