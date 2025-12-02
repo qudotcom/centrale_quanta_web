@@ -1,1 +1,30 @@
+{% extends "base.html" %}
 
+{% block content %}
+<div style="text-align: center; margin-top: 10vh;">
+    <h1>WELCOME TO THE FABRIC</h1>
+    <p style="font-size: 1.2rem; max-width: 600px; margin: 0 auto; line-height: 1.6;">
+        You have entered the <span style="color: #fff;">Centrale Quanta</span> digital manifold. 
+        We explore the intersection of Quantum Mechanics and Computing.
+    </p>
+
+    <div style="margin-top: 3rem;">
+        <a href="/tournament/bracket" class="btn" style="font-size: 1.5rem; padding: 15px 30px;">
+            ENTER TOURNAMENT BRACKET
+        </a>
+    </div>
+
+    <div style="margin-top: 50px; font-size: 0.8rem; color: var(--primary-dim);">
+        System Status: <span style="animation: blink 1s infinite;">ONLINE</span><br>
+        Entanglement: STABLE
+    </div>
+</div>
+
+<style>
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+}
+</style>
+{% endblock %}
