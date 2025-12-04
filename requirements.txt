@@ -5,6 +5,8 @@ jinja2==3.1.2
 python-multipart==0.0.6
 passlib[bcrypt]==1.7.4
 python-jose[cryptography]==3.3.0
+# Fix: Pin bcrypt to 4.0.1 to satisfy passlib
+bcrypt==4.0.1
 # Real Physics Dependencies
 numpy
 cirq-core
