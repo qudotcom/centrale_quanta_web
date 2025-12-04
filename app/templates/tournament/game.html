@@ -7,18 +7,20 @@
 
 <div class="game-container" style="max-width: 1000px; margin: 0 auto;">
     
-    <div style="flex: 1; min-width: 400px;">
-        <div id="myBoard" style="width: 100%"></div>
-        <div style="margin-top: 10px; color: var(--primary-dim); font-size: 0.9rem;">
-            Draggable Interface Active. <br>
-            <small>*Note: Drag works for Standard moves. Use Terminal for Split moves (^).</small>
+    <div style="flex: 1; min-width: 400px; display: flex; flex-direction: column; align-items: center;">
+        <div id="myBoard" style="width: 100%; max-width: 500px;"></div>
+        
+        <div style="margin-top: 15px; color: var(--primary-dim); font-size: 0.9rem; text-align: center;">
+            <span style="border: 1px solid var(--primary); padding: 5px 10px;">STATUS: CONNECTED</span>
+            <br><br>
+            <small>Drag pieces for standard moves.<br>Use Terminal for Quantum Splitting (^).</small>
         </div>
     </div>
 
     <div class="control-panel">
         <div class="player-info">
-            <div class="p1">WHITE: {{ match.player1.username }}</div>
-            <div class="p2">BLACK: {{ match.player2.username }}</div>
+            <div class="p1">WHITE: <span style="color:white;">{{ match.player1.username }}</span></div>
+            <div class="p2">BLACK: <span style="color:white;">{{ match.player2.username }}</span></div>
         </div>
 
         <div id="game-data" data-match-id="{{ match.id }}" data-fen="{{ fen }}" style="display: none;"></div>
@@ -26,13 +28,14 @@
         <div class="logs" id="game-logs">
             <div>> Uplink Established...</div>
             <div>> Rendering Quantum State...</div>
+            <div>> Board Initialized.</div>
         </div>
 
         <div class="command-line">
-            <label for="move-input">MANUAL OVERRIDE:</label>
+            <label for="move-input">QUANTUM COMMAND LINE:</label>
             <div style="display: flex; gap: 10px;">
-                <input type="text" id="move-input" placeholder="e2e4 or b1a3^b1c3" autocomplete="off">
-                <button onclick="submitManualMove()" class="btn">SEND</button>
+                <input type="text" id="move-input" placeholder="e.g. b1a3^b1c3" autocomplete="off">
+                <button onclick="submitManualMove()" class="btn">EXECUTE</button>
             </div>
         </div>
     </div>
@@ -44,22 +47,25 @@ var board = null;
 var gameMatchId = document.getElementById('game-data').dataset.matchId;
 var startFen = document.getElementById('game-data').dataset.fen;
 
-// Initialize Board
 function onDrop (source, target) {
-    // Construct move string (e.g., 'e2e4')
+    if (source === target) return;
     var move = source.toLowerCase() + target.toLowerCase();
     submitMoveToServer(move);
 }
 
+// Config with specific piece theme path
 var config = {
     draggable: true,
     position: startFen,
     onDrop: onDrop,
+    // We use standard wikipedia pieces, but we will CSS filter them below
     pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
 }
 board = Chessboard('myBoard', config)
 
-// Logic to send move to API
+// Ensure board resizes responsibly
+window.addEventListener('resize', board.resize);
+
 async function submitMoveToServer(moveStr) {
     const logPanel = document.getElementById('game-logs');
     logPanel.innerHTML += `<div>> Sending move: ${moveStr}...</div>`;
@@ -74,31 +80,25 @@ async function submitMoveToServer(moveStr) {
         const data = await response.json();
 
         if (data.success) {
-            logPanel.innerHTML += `<div style="color: #fff;">> SUCCESS. Updating Topology.</div>`;
-            // Update the board with the new FEN from server
+            logPanel.innerHTML += `<div style="color: #fff;">> SUCCESS. State Updated.</div>`;
             board.position(data.fen);
         } else {
             logPanel.innerHTML += `<div style="color: red;">> ERROR: ${data.message}</div>`;
-            // Snapback piece if move failed
-            board.position(startFen); 
+            board.position(startFen); // Snapback
         }
     } catch (error) {
         logPanel.innerHTML += `<div style="color: red;">> NETWORK ERROR</div>`;
     }
 }
 
-// Wrapper for the manual input box
 function submitManualMove() {
     var input = document.getElementById('move-input');
     submitMoveToServer(input.value);
     input.value = '';
 }
 
-// Allow Enter key
 document.getElementById('move-input').addEventListener("keypress", function(event) {
-    if (event.key === "Enter") {
-        submitManualMove();
-    }
+    if (event.key === "Enter") submitManualMove();
 });
 </script>
 
@@ -131,9 +131,40 @@ document.getElementById('move-input').addEventListener("keypress", function(even
         color: var(--primary);
         background: black;
     }
-    /* Override Chessboard CSS for Dark Mode feel */
+
+    /* --- THE MATRIX THEME FOR CHESSBOARD --- */
+    
+    /* 1. The Board Border */
     .board-b72b1 {
         border: 5px solid var(--primary-dim);
+        box-shadow: 0 0 15px var(--primary-dim);
+    }
+
+    /* 2. Black Squares (Make them pure black) */
+    .black-3c85d {
+        background-color: #000000 !important;
+        color: var(--primary); /* For rank/file labels */
+    }
+
+    /* 3. White Squares (Make them Dark Green/Grey) */
+    .white-1e1d7 {
+        background-color: #0a2a0a !important;
+        color: var(--primary);
+    }
+
+    /* 4. The Pieces (Make them look like Holograms) */
+    /* This filter forces the pieces to look greenish/glowing */
+    .piece-417db {
+        filter: invert(1) sepia(1) saturate(5) hue-rotate(90deg) drop-shadow(0 0 5px var(--primary));
+        opacity: 0.9;
+        transition: all 0.2s;
+    }
+    
+    /* Hover effect for pieces */
+    .piece-417db:hover {
+        opacity: 1;
+        filter: invert(1) sepia(1) saturate(10) hue-rotate(90deg) drop-shadow(0 0 10px var(--primary));
+        cursor: grab;
     }
 </style>
 {% endblock %}
