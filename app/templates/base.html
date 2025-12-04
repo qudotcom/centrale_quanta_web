@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Centrale Quanta | Space-Time</title>
-    
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
@@ -12,15 +11,26 @@
     <nav>
         <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
             <div style="font-weight: bold; font-size: 1.2rem; color: var(--primary); text-shadow: var(--glow);">
-                <a href="/" style="color: var(--primary);">[ CENTRALE QUANTA ]</a>
+                <a href="/">[ CENTRALE QUANTA ]</a>
             </div>
             
             <ul>
                 <li><a href="/">:: HOME ::</a></li>
                 <li><a href="/about">:: CLUB_DATA ::</a></li>
                 <li><a href="/tournament/bracket">:: TOURNAMENT ::</a></li>
-                <li><a href="/auth/login">:: LOGIN ::</a></li>
-                <li><a href="/auth/register">:: JOIN ::</a></li>
+
+                {% if request.state.user %}
+                    <li style="border: 1px solid var(--primary); padding: 5px 15px; background: rgba(0,255,65,0.1);">
+                        <span style="font-size: 0.8rem; color: var(--primary-dim);">OPERATOR:</span>
+                        <span style="font-weight: bold; color: white;">{{ request.state.user.username }}</span>
+                    </li>
+                    <li>
+                        <a href="/auth/logout" style="color: #ff4444;">[ DISCONNECT ]</a>
+                    </li>
+                {% else %}
+                    <li><a href="/auth/login">:: LOGIN ::</a></li>
+                    <li><a href="/auth/register">:: JOIN ::</a></li>
+                {% endif %}
             </ul>
         </div>
     </nav>
