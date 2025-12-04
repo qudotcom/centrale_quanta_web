@@ -5,34 +5,39 @@
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
 
-<div class="game-container" style="max-width: 1000px; margin: 0 auto;">
+<div class="game-layout">
     
-    <div style="flex: 1; min-width: 400px; display: flex; flex-direction: column; align-items: center;">
-        <div id="myBoard" style="width: 100%; max-width: 500px;"></div>
-        
-        <div style="margin-top: 15px; color: var(--primary-dim); font-size: 0.9rem; text-align: center;">
-            <span style="border: 1px solid var(--primary); padding: 5px 10px;">STATUS: CONNECTED</span>
-            <br><br>
-            <small>Drag pieces for standard moves.<br>Use Terminal for Quantum Splitting (^).</small>
+    <div class="board-zone">
+        <div id="myBoard" style="width: 100%"></div>
+        <div class="board-status">
+            STATUS: <span style="color: var(--primary);">CONNECTED</span><br>
+            <small>Drag for Standard Move | Terminal for Split (^)</small>
         </div>
     </div>
 
-    <div class="control-panel">
-        <div class="player-info">
-            <div class="p1">WHITE: <span style="color:white;">{{ match.player1.username }}</span></div>
-            <div class="p2">BLACK: <span style="color:white;">{{ match.player2.username }}</span></div>
+    <div class="control-zone">
+        <div class="info-card">
+            <div style="border-bottom: 1px solid var(--primary-dim); margin-bottom: 10px; padding-bottom: 5px;">
+                MATCH #{{ match.id }}
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span>WHITE:</span> <span>{{ match.player1.username }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span>BLACK:</span> <span>{{ match.player2.username }}</span>
+            </div>
         </div>
 
-        <div id="game-data" data-match-id="{{ match.id }}" data-fen="{{ fen }}" style="display: none;"></div>
-
         <div class="logs" id="game-logs">
-            <div>> Uplink Established...</div>
-            <div>> Rendering Quantum State...</div>
-            <div>> Board Initialized.</div>
+            <div>> Initializing Quantum Manifold...</div>
+            <div>> Match Loaded.</div>
+            {% if match.player1.username == 'CPU_AI' %}
+            <div>> AI is White. Calculation initiated...</div>
+            {% endif %}
         </div>
 
         <div class="command-line">
-            <label for="move-input">QUANTUM COMMAND LINE:</label>
+            <label>QUANTUM INPUT:</label>
             <div style="display: flex; gap: 10px;">
                 <input type="text" id="move-input" placeholder="e.g. b1a3^b1c3" autocomplete="off">
                 <button onclick="submitManualMove()" class="btn">EXECUTE</button>
@@ -42,10 +47,18 @@
 
 </div>
 
+<div id="game-data" 
+     data-match-id="{{ match.id }}" 
+     data-fen="{{ fen }}" 
+     data-orientation="{{ orientation }}"
+     style="display: none;">
+</div>
+
 <script>
 var board = null;
 var gameMatchId = document.getElementById('game-data').dataset.matchId;
 var startFen = document.getElementById('game-data').dataset.fen;
+var orientationType = document.getElementById('game-data').dataset.orientation;
 
 function onDrop (source, target) {
     if (source === target) return;
@@ -53,22 +66,20 @@ function onDrop (source, target) {
     submitMoveToServer(move);
 }
 
-// Config with specific piece theme path
+// Initialize Board with Correct Orientation
 var config = {
     draggable: true,
     position: startFen,
+    orientation: orientationType, // FLIPS BOARD IF USER IS BLACK
     onDrop: onDrop,
-    // We use standard wikipedia pieces, but we will CSS filter them below
     pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
 }
 board = Chessboard('myBoard', config)
-
-// Ensure board resizes responsibly
 window.addEventListener('resize', board.resize);
 
 async function submitMoveToServer(moveStr) {
     const logPanel = document.getElementById('game-logs');
-    logPanel.innerHTML += `<div>> Sending move: ${moveStr}...</div>`;
+    logPanel.innerHTML += `<div>> Sending: ${moveStr}...</div>`;
     logPanel.scrollTop = logPanel.scrollHeight;
 
     try {
@@ -80,14 +91,14 @@ async function submitMoveToServer(moveStr) {
         const data = await response.json();
 
         if (data.success) {
-            logPanel.innerHTML += `<div style="color: #fff;">> SUCCESS. State Updated.</div>`;
+            logPanel.innerHTML += `<div style="color: #fff;">> SUCCESS.</div>`;
             board.position(data.fen);
         } else {
             logPanel.innerHTML += `<div style="color: red;">> ERROR: ${data.message}</div>`;
             board.position(startFen); // Snapback
         }
     } catch (error) {
-        logPanel.innerHTML += `<div style="color: red;">> NETWORK ERROR</div>`;
+        logPanel.innerHTML += `<div style="color: red;">> CONNECTION LOST</div>`;
     }
 }
 
@@ -97,73 +108,74 @@ function submitManualMove() {
     input.value = '';
 }
 
-document.getElementById('move-input').addEventListener("keypress", function(event) {
-    if (event.key === "Enter") submitManualMove();
+document.getElementById('move-input').addEventListener("keypress", function(e) {
+    if (e.key === "Enter") submitManualMove();
 });
 </script>
 
 <style>
-    .game-container {
-        display: flex;
+    /* CSS GRID FOR STABILITY */
+    .game-layout {
+        display: grid;
+        grid-template-columns: 1fr 350px; /* Board takes remaining space, controls fixed */
         gap: 2rem;
-        margin-top: 2rem;
-        flex-wrap: wrap;
+        align-items: start;
+        max-width: 1100px;
+        margin: 2rem auto;
     }
-    .control-panel {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-        min-width: 300px;
+
+    @media (max-width: 900px) {
+        .game-layout {
+            grid-template-columns: 1fr; /* Stack on mobile */
+        }
     }
-    .player-info {
+
+    .board-zone {
+        background: rgba(0, 20, 0, 0.3);
+        padding: 20px;
+        border: 1px solid var(--primary-dim);
+    }
+
+    .info-card {
         border: 1px solid var(--primary);
         padding: 1rem;
-        background: rgba(0, 20, 0, 0.5);
+        background: rgba(0, 20, 0, 0.8);
+        font-weight: bold;
     }
+
     .logs {
         border: 1px dashed var(--primary-dim);
-        height: 300px;
+        height: 350px;
         overflow-y: auto;
         padding: 0.5rem;
         font-family: 'Courier New', monospace;
         font-size: 0.85rem;
         color: var(--primary);
         background: black;
+        margin-top: 1rem;
     }
 
-    /* --- THE MATRIX THEME FOR CHESSBOARD --- */
-    
-    /* 1. The Board Border */
+    .board-status {
+        margin-top: 15px; 
+        color: var(--primary-dim); 
+        font-size: 0.9rem; 
+        text-align: center;
+    }
+
+    /* THEME OVERRIDES */
     .board-b72b1 {
         border: 5px solid var(--primary-dim);
-        box-shadow: 0 0 15px var(--primary-dim);
+        box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
     }
-
-    /* 2. Black Squares (Make them pure black) */
-    .black-3c85d {
-        background-color: #000000 !important;
-        color: var(--primary); /* For rank/file labels */
-    }
-
-    /* 3. White Squares (Make them Dark Green/Grey) */
-    .white-1e1d7 {
-        background-color: #0a2a0a !important;
-        color: var(--primary);
-    }
-
-    /* 4. The Pieces (Make them look like Holograms) */
-    /* This filter forces the pieces to look greenish/glowing */
+    .black-3c85d { background-color: #000000 !important; color: var(--primary); }
+    .white-1e1d7 { background-color: #0a2a0a !important; color: var(--primary); }
+    
     .piece-417db {
         filter: invert(1) sepia(1) saturate(5) hue-rotate(90deg) drop-shadow(0 0 5px var(--primary));
-        opacity: 0.9;
-        transition: all 0.2s;
+        opacity: 0.95;
     }
-    
-    /* Hover effect for pieces */
     .piece-417db:hover {
-        opacity: 1;
-        filter: invert(1) sepia(1) saturate(10) hue-rotate(90deg) drop-shadow(0 0 10px var(--primary));
+        filter: invert(1) sepia(1) saturate(10) hue-rotate(90deg) drop-shadow(0 0 15px var(--primary));
         cursor: grab;
     }
 </style>
