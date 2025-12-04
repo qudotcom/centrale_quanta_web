@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div id="game-data" data-match-id="{{ match.id }}" style="display: none;"></div>
+<link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
 
-<div class="game-container">
+<div class="game-container" style="max-width: 1000px; margin: 0 auto;">
     
-    <div class="terminal-window">
-        <div class="term-header">
-            <span>>> QUANTUM_SIMULATION_LINK: MATCH #{{ match.id }}</span>
-            <span class="status-blink">LIVE</span>
-        </div>
-        <div class="term-body">
-            <pre id="quantum-board">{{ board_visual }}</pre>
+    <div style="flex: 1; min-width: 400px;">
+        <div id="myBoard" style="width: 100%"></div>
+        <div style="margin-top: 10px; color: var(--primary-dim); font-size: 0.9rem;">
+            Draggable Interface Active. <br>
+            <small>*Note: Drag works for Standard moves. Use Terminal for Split moves (^).</small>
         </div>
     </div>
 
@@ -21,88 +21,119 @@
             <div class="p2">BLACK: {{ match.player2.username }}</div>
         </div>
 
-        <div class="command-line">
-            <label for="move-input">ENTER COORDINATES:</label>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="move-input" placeholder="e.g. e2e4 or a1c3^" autofocus autocomplete="off">
-                <button onclick="submitMove()" class="btn">EXECUTE</button>
-            </div>
-            <small style="color: var(--primary-dim);">Use ^ for split moves (e.g. b1a3^b1c3)</small>
-        </div>
+        <div id="game-data" data-match-id="{{ match.id }}" data-fen="{{ fen }}" style="display: none;"></div>
 
         <div class="logs" id="game-logs">
-            <div>> System Initialized...</div>
-            <div>> Waiting for input...</div>
+            <div>> Uplink Established...</div>
+            <div>> Rendering Quantum State...</div>
+        </div>
+
+        <div class="command-line">
+            <label for="move-input">MANUAL OVERRIDE:</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="move-input" placeholder="e2e4 or b1a3^b1c3" autocomplete="off">
+                <button onclick="submitManualMove()" class="btn">SEND</button>
+            </div>
         </div>
     </div>
 
 </div>
 
-<script src="{{ url_for('static', path='/js/game_client.js') }}"></script>
+<script>
+var board = null;
+var gameMatchId = document.getElementById('game-data').dataset.matchId;
+var startFen = document.getElementById('game-data').dataset.fen;
+
+// Initialize Board
+function onDrop (source, target) {
+    // Construct move string (e.g., 'e2e4')
+    var move = source.toLowerCase() + target.toLowerCase();
+    submitMoveToServer(move);
+}
+
+var config = {
+    draggable: true,
+    position: startFen,
+    onDrop: onDrop,
+    pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
+}
+board = Chessboard('myBoard', config)
+
+// Logic to send move to API
+async function submitMoveToServer(moveStr) {
+    const logPanel = document.getElementById('game-logs');
+    logPanel.innerHTML += `<div>> Sending move: ${moveStr}...</div>`;
+    logPanel.scrollTop = logPanel.scrollHeight;
+
+    try {
+        const response = await fetch(`/tournament/move/${gameMatchId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ move_str: moveStr })
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            logPanel.innerHTML += `<div style="color: #fff;">> SUCCESS. Updating Topology.</div>`;
+            // Update the board with the new FEN from server
+            board.position(data.fen);
+        } else {
+            logPanel.innerHTML += `<div style="color: red;">> ERROR: ${data.message}</div>`;
+            // Snapback piece if move failed
+            board.position(startFen); 
+        }
+    } catch (error) {
+        logPanel.innerHTML += `<div style="color: red;">> NETWORK ERROR</div>`;
+    }
+}
+
+// Wrapper for the manual input box
+function submitManualMove() {
+    var input = document.getElementById('move-input');
+    submitMoveToServer(input.value);
+    input.value = '';
+}
+
+// Allow Enter key
+document.getElementById('move-input').addEventListener("keypress", function(event) {
+    if (event.key === "Enter") {
+        submitManualMove();
+    }
+});
+</script>
 
 <style>
     .game-container {
-        display: grid;
-        grid-template-columns: 1.5fr 1fr;
+        display: flex;
         gap: 2rem;
-        margin-top: 1rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
     }
-
-    .terminal-window {
-        border: 1px solid var(--primary);
-        background: rgba(0, 10, 0, 0.9);
-        box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
-    }
-
-    .term-header {
-        background: var(--primary-dim);
-        color: black;
-        padding: 5px 10px;
-        font-weight: bold;
-        display: flex;
-        justify-content: space-between;
-    }
-
-    .term-body {
-        padding: 1rem;
-        overflow: auto;
-        min-height: 400px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-
-    pre {
-        font-family: 'Courier New', monospace;
-        font-size: 14px;
-        line-height: 14px;
-        color: var(--primary);
-        font-weight: bold;
-    }
-
     .control-panel {
+        flex: 1;
         display: flex;
         flex-direction: column;
-        gap: 1.5rem;
+        gap: 1rem;
+        min-width: 300px;
     }
-
     .player-info {
-        border: 1px solid var(--primary-dim);
+        border: 1px solid var(--primary);
         padding: 1rem;
+        background: rgba(0, 20, 0, 0.5);
     }
-
     .logs {
         border: 1px dashed var(--primary-dim);
-        height: 200px;
+        height: 300px;
         overflow-y: auto;
         padding: 0.5rem;
-        font-size: 0.8rem;
-        color: var(--primary-dim);
-        background: rgba(0,0,0,0.5);
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: var(--primary);
+        background: black;
     }
-
-    .status-blink {
-        animation: blink 1s infinite;
+    /* Override Chessboard CSS for Dark Mode feel */
+    .board-b72b1 {
+        border: 5px solid var(--primary-dim);
     }
 </style>
 {% endblock %}
