@@ -7,40 +7,44 @@
 
 <div class="game-layout">
     
-    <div class="board-zone">
-        <div id="myBoard" style="width: 100%"></div>
-        <div class="board-status">
-            STATUS: <span style="color: var(--primary);">CONNECTED</span><br>
-            <small>Drag for Standard Move | Terminal for Split (^)</small>
+    <div class="board-container">
+        <div id="myBoard"></div>
+        
+        <div class="status-bar">
+            <span class="indicator"></span> LIVE UPLINK
+        </div>
+        
+        <div class="instructions">
+            <small>
+                <strong>CONTROLS:</strong><br>
+                1. <strong>Standard Move:</strong> Drag & Drop (e.g., e2 to e4)<br>
+                2. <strong>Quantum Split:</strong> Use Terminal (e.g., b1a3^b1c3)
+            </small>
         </div>
     </div>
 
-    <div class="control-zone">
-        <div class="info-card">
-            <div style="border-bottom: 1px solid var(--primary-dim); margin-bottom: 10px; padding-bottom: 5px;">
-                MATCH #{{ match.id }}
+    <div class="control-panel">
+        <div class="match-info">
+            <div class="player-row">
+                <span class="p-label">WHITE</span>
+                <span class="p-name">{{ match.player1.username }}</span>
             </div>
-            <div style="display: flex; justify-content: space-between;">
-                <span>WHITE:</span> <span>{{ match.player1.username }}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-                <span>BLACK:</span> <span>{{ match.player2.username }}</span>
+            <div class="player-row">
+                <span class="p-label">BLACK</span>
+                <span class="p-name">{{ match.player2.username }}</span>
             </div>
         </div>
 
         <div class="logs" id="game-logs">
-            <div>> Initializing Quantum Manifold...</div>
-            <div>> Match Loaded.</div>
-            {% if match.player1.username == 'CPU_AI' %}
-            <div>> AI is White. Calculation initiated...</div>
-            {% endif %}
+            <div>> System Initialized.</div>
+            <div>> Waiting for quantum collapse...</div>
         </div>
 
-        <div class="command-line">
-            <label>QUANTUM INPUT:</label>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="move-input" placeholder="e.g. b1a3^b1c3" autocomplete="off">
-                <button onclick="submitManualMove()" class="btn">EXECUTE</button>
+        <div class="input-area">
+            <label>QUANTUM TERMINAL:</label>
+            <div class="input-group">
+                <input type="text" id="move-input" placeholder="Enter split move..." autocomplete="off">
+                <button onclick="submitManualMove()" class="btn">SEND</button>
             </div>
         </div>
     </div>
@@ -66,20 +70,22 @@ function onDrop (source, target) {
     submitMoveToServer(move);
 }
 
-// Initialize Board with Correct Orientation
+// Fixed Board Config
 var config = {
     draggable: true,
     position: startFen,
-    orientation: orientationType, // FLIPS BOARD IF USER IS BLACK
+    orientation: orientationType,
     onDrop: onDrop,
     pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
 }
 board = Chessboard('myBoard', config)
+
+// Responsive fix
 window.addEventListener('resize', board.resize);
 
 async function submitMoveToServer(moveStr) {
     const logPanel = document.getElementById('game-logs');
-    logPanel.innerHTML += `<div>> Sending: ${moveStr}...</div>`;
+    logPanel.innerHTML += `<div>> Executing: ${moveStr}</div>`;
     logPanel.scrollTop = logPanel.scrollHeight;
 
     try {
@@ -91,21 +97,23 @@ async function submitMoveToServer(moveStr) {
         const data = await response.json();
 
         if (data.success) {
-            logPanel.innerHTML += `<div style="color: #fff;">> SUCCESS.</div>`;
+            logPanel.innerHTML += `<div style="color: #0f0;">> MOVE SUCCESS.</div>`;
             board.position(data.fen);
         } else {
-            logPanel.innerHTML += `<div style="color: red;">> ERROR: ${data.message}</div>`;
+            logPanel.innerHTML += `<div style="color: #f00;">> ERROR: ${data.message}</div>`;
             board.position(startFen); // Snapback
         }
     } catch (error) {
-        logPanel.innerHTML += `<div style="color: red;">> CONNECTION LOST</div>`;
+        logPanel.innerHTML += `<div style="color: #f00;">> SIGNAL LOST</div>`;
     }
 }
 
 function submitManualMove() {
     var input = document.getElementById('move-input');
-    submitMoveToServer(input.value);
-    input.value = '';
+    if(input.value) {
+        submitMoveToServer(input.value);
+        input.value = '';
+    }
 }
 
 document.getElementById('move-input').addEventListener("keypress", function(e) {
@@ -114,68 +122,105 @@ document.getElementById('move-input').addEventListener("keypress", function(e) {
 </script>
 
 <style>
-    /* CSS GRID FOR STABILITY */
+    /* 1. LAYOUT GRID */
     .game-layout {
-        display: grid;
-        grid-template-columns: 1fr 350px; /* Board takes remaining space, controls fixed */
-        gap: 2rem;
-        align-items: start;
-        max-width: 1100px;
-        margin: 2rem auto;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 40px;
+        margin-top: 40px;
+        padding: 0 20px;
     }
 
-    @media (max-width: 900px) {
-        .game-layout {
-            grid-template-columns: 1fr; /* Stack on mobile */
-        }
+    /* 2. BOARD SIZE LOCK - This fixes the "Too Big" issue */
+    .board-container {
+        width: 100%;
+        max-width: 450px; /* <--- CRITICAL FIX */
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
     }
 
-    .board-zone {
-        background: rgba(0, 20, 0, 0.3);
-        padding: 20px;
-        border: 1px solid var(--primary-dim);
+    /* 3. CONTROL PANEL */
+    .control-panel {
+        flex: 1;
+        min-width: 300px;
+        max-width: 400px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
     }
 
-    .info-card {
+    /* STYLING DETAILS */
+    .match-info {
         border: 1px solid var(--primary);
-        padding: 1rem;
+        padding: 15px;
         background: rgba(0, 20, 0, 0.8);
-        font-weight: bold;
     }
-
-    .logs {
-        border: 1px dashed var(--primary-dim);
-        height: 350px;
-        overflow-y: auto;
-        padding: 0.5rem;
-        font-family: 'Courier New', monospace;
-        font-size: 0.85rem;
-        color: var(--primary);
-        background: black;
-        margin-top: 1rem;
+    .player-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+        border-bottom: 1px dashed var(--primary-dim);
     }
-
-    .board-status {
-        margin-top: 15px; 
-        color: var(--primary-dim); 
-        font-size: 0.9rem; 
-        text-align: center;
-    }
-
-    /* THEME OVERRIDES */
-    .board-b72b1 {
-        border: 5px solid var(--primary-dim);
-        box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
-    }
-    .black-3c85d { background-color: #000000 !important; color: var(--primary); }
-    .white-1e1d7 { background-color: #0a2a0a !important; color: var(--primary); }
+    .player-row:last-child { border: none; }
     
+    .logs {
+        height: 250px;
+        background: #000;
+        border: 1px solid var(--primary-dim);
+        overflow-y: auto;
+        padding: 10px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8rem;
+        color: var(--primary);
+        box-shadow: inset 0 0 10px rgba(0,255,0,0.1);
+    }
+
+    .input-group {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .status-bar {
+        text-align: center;
+        color: var(--primary);
+        font-size: 0.8rem;
+        letter-spacing: 2px;
+    }
+    .indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background-color: var(--primary);
+        border-radius: 50%;
+        margin-right: 5px;
+        box-shadow: 0 0 5px var(--primary);
+    }
+    
+    .instructions {
+        text-align: center;
+        color: #888;
+        font-size: 0.8rem;
+    }
+
+    /* CHESSBOARD THEME OVERRIDES */
+    .board-b72b1 {
+        border: 4px solid var(--primary-dim);
+        box-shadow: 0 0 25px rgba(0, 255, 65, 0.15);
+    }
+    .black-3c85d { background-color: #111 !important; }
+    .white-1e1d7 { background-color: #2a3a2a !important; }
+    
+    /* GREEN HOLOGRAM PIECES */
     .piece-417db {
-        filter: invert(1) sepia(1) saturate(5) hue-rotate(90deg) drop-shadow(0 0 5px var(--primary));
-        opacity: 0.95;
+        filter: invert(1) sepia(1) saturate(5) hue-rotate(90deg);
+        opacity: 0.9;
+        transition: transform 0.1s;
     }
     .piece-417db:hover {
-        filter: invert(1) sepia(1) saturate(10) hue-rotate(90deg) drop-shadow(0 0 15px var(--primary));
+        transform: scale(1.1);
+        filter: invert(1) sepia(1) saturate(10) hue-rotate(90deg) drop-shadow(0 0 8px var(--primary));
         cursor: grab;
     }
 </style>
