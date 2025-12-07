@@ -209,7 +209,7 @@ async function sendMove(moveStr) {
         const data = await res.json();
 
         if (data.success) {
-            document.getElementById('logs').innerHTML += `<div style="color:#0f0">> Move Accepted.</div>`;
+            document.getElementById('logs').innerHTML += `<div class="log-entry" style="color:#0f0">> Move Accepted.</div>`;
             currentBoardData = data.board_data;
             
             if (data.game_over) {
@@ -224,13 +224,13 @@ async function sendMove(moveStr) {
             }
             renderBoard(currentBoardData);
         } else {
-            document.getElementById('logs').innerHTML += `<div style="color:#f44">> Error: ${data.message}</div>`;
+            document.getElementById('logs').innerHTML += `<div class="log-entry" style="color:#f44">> Error: ${data.message}</div>`;
             // Restore UI state if failed
             updateUIState(false);
         }
     } catch (e) { 
         console.error(e); 
-        document.getElementById('logs').innerHTML += `<div style="color:#f44">> Signal Lost.</div>`;
+        document.getElementById('logs').innerHTML += `<div class="log-entry" style="color:#f44">> Signal Lost.</div>`;
     }
 }
 
