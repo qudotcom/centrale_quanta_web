@@ -3,34 +3,60 @@
 {% block content %}
 <div class="dashboard-wrapper">
     <div class="board-column">
-        <div class="board-frame"><div id="quantum-board" class="board-grid"></div></div>
+        <div class="board-frame">
+            <div id="quantum-board" class="board-grid"></div>
+            
+            <div id="drag-proxy" class="drag-proxy" style="display:none;"></div>
+        </div>
     </div>
 
     <div class="hud-column">
         
         <div class="panel turn-panel">
             <div class="panel-header">>> CHRONOMETER</div>
-            <div class="timer-box" id="timer-white" style="border-color: cyan;">
-                <span class="label">WHITE</span>
-                <span class="digits" id="digits-white">10:00</span>
+            <div class="timer-row">
+                <div class="timer-box" id="timer-white" style="border-color: #0ff;">
+                    <div class="label">WHITE</div>
+                    <div class="digits" id="digits-white">10:00</div>
+                </div>
+                <div class="timer-box" id="timer-black" style="border-color: #f70;">
+                    <div class="label">BLACK</div>
+                    <div class="digits" id="digits-black">10:00</div>
+                </div>
             </div>
-            <div class="timer-box" id="timer-black" style="border-color: #f70; margin-top:10px;">
-                <span class="label">BLACK</span>
-                <span class="digits" id="digits-black">10:00</span>
-            </div>
+            <div id="turn-display" class="turn-status">INITIALIZING...</div>
         </div>
 
         <div class="panel info-panel">
+            <div class="info-row"><span>WHITE:</span> {{ match.player1.username }}</div>
+            <div class="info-row"><span>BLACK:</span> {{ match.player2.username }}</div>
             <div class="info-row"><span>YOU:</span> <strong style="color:white">{{ user_color|upper }}</strong></div>
-            <div class="info-row" id="turn-text" style="color: #0f0; margin-top:10px;">...</div>
         </div>
 
-        <div class="panel input-panel">
-            <div class="input-wrapper">
-                <button onclick="toggleMode()" id="mode-btn" class="btn-mode">MODE: STANDARD</button>
-                <button onclick="clearSelection()" class="btn-clear">RESET</button>
+        <div class="panel control-panel">
+            <div class="panel-header">>> INTERFACE MODE</div>
+            
+            <div class="mode-switch-container">
+                <span id="mode-text" style="color: #888; font-size: 0.8rem;">STANDARD (Drag & Drop)</span>
+                <label class="switch">
+                    <input type="checkbox" id="quantum-toggle" onclick="toggleMode()">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+            <div id="instruction-text" class="instruction-box">
+                Drag pieces to move.
+            </div>
+            
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button onclick="clearSelection()" class="btn-action">RESET SELECTION</button>
             </div>
         </div>
+
+        <div class="panel logs-panel" id="logs">
+            <div class="log-entry">> Uplink Established.</div>
+        </div>
+
     </div>
 </div>
 
@@ -44,8 +70,27 @@
 </div>
 
 <script>
-const COLS = ['a','b','c','d','e','f','g','h'];
-const ROWS = ['8','7','6','5','4','3','2','1'];
+// --- FUTURISTIC ASSETS (SVG PATHS) ---
+// Custom drawn for "Matrix/Tron" aesthetic. No Crosses.
+const SVGS = {
+    // Pawn: A simple data pyramid
+    'P': '<svg viewBox="0 0 100 100"><path d="M50 20 L80 80 L20 80 Z" fill="currentColor"/><rect x="45" y="10" width="10" height="10" fill="currentColor"/></svg>',
+    // Rook: A fortified server block
+    'R': '<svg viewBox="0 0 100 100"><rect x="25" y="30" width="50" height="50" fill="currentColor"/><rect x="25" y="20" width="10" height="15" fill="currentColor"/><rect x="45" y="20" width="10" height="15" fill="currentColor"/><rect x="65" y="20" width="10" height="15" fill="currentColor"/><rect x="20" y="80" width="60" height="10" fill="currentColor"/></svg>',
+    // Knight: Geometric Horse Profile
+    'N': '<svg viewBox="0 0 100 100"><path d="M30 80 L70 80 L70 40 L80 30 L60 10 L30 30 L40 50 L30 80" fill="currentColor"/></svg>',
+    // Bishop: An angular data shard/obelisk
+    'B': '<svg viewBox="0 0 100 100"><path d="M50 10 L80 50 L50 90 L20 50 Z" fill="currentColor"/><circle cx="50" cy="30" r="5" fill="#000"/></svg>',
+    // Queen: A Radiant Crown (Spikes)
+    'Q': '<svg viewBox="0 0 100 100"><path d="M20 80 L30 40 L40 60 L50 10 L60 60 L70 40 L80 80 Z" fill="currentColor"/><circle cx="50" cy="90" r="5" fill="currentColor"/></svg>',
+    // King: The Monolith (No Cross) - A tall, imposing structure
+    'K': '<svg viewBox="0 0 100 100"><rect x="35" y="20" width="30" height="60" fill="currentColor"/><rect x="25" y="80" width="50" height="10" fill="currentColor"/><path d="M35 20 L50 5 L65 20 Z" fill="currentColor"/></svg>'
+};
+
+// Map lowercases
+const PIECE_MAP = { ...SVGS, 'p':SVGS.P, 'r':SVGS.R, 'n':SVGS.N, 'b':SVGS.B, 'q':SVGS.Q, 'k':SVGS.K };
+
+// --- STATE ---
 const gameData = document.getElementById('game-data');
 const matchId = gameData.dataset.matchId;
 const userColor = gameData.dataset.userColor;
@@ -53,27 +98,20 @@ let currentTurn = gameData.dataset.turn;
 let boardData = JSON.parse(gameData.dataset.board);
 let p1Time = parseFloat(gameData.dataset.p1);
 let p2Time = parseFloat(gameData.dataset.p2);
+
+// UI State
 let selectedSquares = [];
 let isQuantumMode = false;
 let timerInterval = null;
+let draggedPieceId = null; // Coordinates of piece being dragged
 
-function getPieceHTML(type, color) {
-    const c = (color === 'white') ? 'cyan' : '#f40';
-    let shapes = '';
-    
-    if (type === 'p') shapes = `<div style="width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:20px solid ${c};"></div>`;
-    else if (type === 'r') shapes = `<div style="width:20px;height:20px;background:${c};"></div>`;
-    else if (type === 'n') shapes = `<div style="width:10px;height:20px;background:${c};transform:skew(-20deg);"></div>`;
-    else if (type === 'b') shapes = `<div style="width:15px;height:15px;background:${c};transform:rotate(45deg);"></div>`;
-    else if (type === 'q') shapes = `<div style="width:20px;height:20px;border-radius:50%;border:2px solid ${c};"></div>`;
-    else if (type === 'k') shapes = `<div style="width:20px;height:20px;background:${c};clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div>`;
-    
-    return `<div style="filter:drop-shadow(0 0 5px ${c});display:flex;align-items:center;justify-content:center;">${shapes}</div>`;
-}
-
+// --- RENDERER ---
 function renderBoard() {
     const boardEl = document.getElementById('quantum-board');
     boardEl.innerHTML = ''; 
+    const COLS = ['a','b','c','d','e','f','g','h'];
+    const ROWS = ['8','7','6','5','4','3','2','1'];
+    
     let rRows = (userColor === 'black') ? [...ROWS].reverse() : ROWS;
     let rCols = (userColor === 'black') ? [...COLS].reverse() : COLS;
 
@@ -85,54 +123,166 @@ function renderBoard() {
             sq.id = id;
             sq.classList.add((COLS.indexOf(col)+parseInt(row))%2===0 ? 'sq-dark':'sq-light');
 
+            // Render Piece
             if (boardData[id]) {
-                const p = boardData[id].type || boardData[id];
-                const type = p.toLowerCase();
-                const color = (p === p.toUpperCase()) ? 'white' : 'black';
-                sq.innerHTML = getPieceHTML(type, color);
+                const data = boardData[id]; 
+                const p = data.type || data; // Handle both simple/complex format
+                const colorClass = (p === p.toUpperCase()) ? 'piece-white' : 'piece-black';
+                
+                const pieceContainer = document.createElement('div');
+                pieceContainer.className = `piece-wrapper ${colorClass}`;
+                pieceContainer.innerHTML = PIECE_MAP[p];
+                
+                // Opacity for probability
+                if (data.prob && data.prob < 1.0) pieceContainer.style.opacity = "0.5";
+                
+                // DRAG HANDLERS (Only if standard mode)
+                pieceContainer.draggable = true;
+                pieceContainer.ondragstart = (e) => handleDragStart(e, id);
+                
+                sq.appendChild(pieceContainer);
             }
-            sq.onclick = () => handleSquareClick(id);
+
+            // EVENT HANDLERS
+            sq.onclick = () => handleClick(id);
+            sq.ondragover = (e) => e.preventDefault(); // Allow drop
+            sq.ondrop = (e) => handleDrop(e, id);
+
             boardEl.appendChild(sq);
         });
     });
-    document.getElementById('turn-text').innerText = (currentTurn === 'white') ? ">> WHITE TURN" : ">> BLACK TURN";
+    
+    // Update Turn Text
+    const turnBox = document.getElementById('turn-display');
+    if (currentTurn === 'white') {
+        turnBox.innerText = "■ WHITE TO MOVE";
+        turnBox.style.color = "#0ff";
+    } else {
+        turnBox.innerText = "■ BLACK TO MOVE";
+        turnBox.style.color = "#f70";
+    }
 }
 
-function handleSquareClick(id) {
-    if (currentTurn !== userColor) return; 
+// --- INTERACTION LOGIC ---
+
+// 1. DRAG & DROP (Standard Move)
+function handleDragStart(e, srcId) {
+    if (isQuantumMode || currentTurn !== userColor) {
+        e.preventDefault(); return;
+    }
+    draggedPieceId = srcId;
+    e.dataTransfer.effectAllowed = 'move';
+    // Optional: Set custom drag image if desired
+}
+
+function handleDrop(e, tgtId) {
+    e.preventDefault();
+    if (!draggedPieceId) return;
+    
+    // Execute Standard Move
+    const moveStr = draggedPieceId + tgtId;
+    sendMove(moveStr);
+    draggedPieceId = null;
+}
+
+// 2. CLICK LOGIC (Quantum & Tap-to-Move)
+function handleClick(id) {
+    if (currentTurn !== userColor) return;
+
+    // Toggle Selection
     const el = document.getElementById(id);
     if (selectedSquares.includes(id)) {
         selectedSquares = selectedSquares.filter(s => s !== id);
-        el.classList.remove('sq-sel');
+        el.classList.remove('sq-sel-src', 'sq-sel-tgt');
         return;
     }
-    const limit = isQuantumMode ? 3 : 2;
-    if (selectedSquares.length < limit) {
-        selectedSquares.push(id);
-        el.classList.add('sq-sel');
-    }
-    if (selectedSquares.length === limit) {
-        let moveStr = "";
-        if (!isQuantumMode) moveStr = selectedSquares.join('');
-        else moveStr = `${selectedSquares[0]}${selectedSquares[1]}^${selectedSquares[0]}${selectedSquares[2]}`;
-        sendMove(moveStr);
+
+    // Add to selection sequence
+    selectedSquares.push(id);
+    updateSelectionVisuals();
+
+    // CHECK FOR ACTION
+    if (!isQuantumMode) {
+        // Standard Mode: 2 Clicks = Move
+        if (selectedSquares.length === 2) {
+            sendMove(selectedSquares.join(''));
+        }
+    } else {
+        // Quantum Mode: 3 Clicks
+        if (selectedSquares.length === 3) {
+            const s1 = selectedSquares[0];
+            const s2 = selectedSquares[1];
+            const t  = selectedSquares[2];
+            
+            // Heuristic for Merge vs Split
+            // If the first two clicks are pieces of the same color, it's a MERGE.
+            // If the first click is piece, and 2nd is empty (or enemy), it's a SPLIT.
+            
+            // Construct move string
+            // Split: s1->s2 & s1->t  ==> s1s2^s1t
+            // Merge: s1->t  & s2->t  ==> s1t^s2t
+            
+            // Simple logic: We will assume the user clicks [Source] [Target1] [Target2] for Split
+            // And [Source1] [Source2] [Target] for Merge
+            
+            // To detect, check boardData for s2
+            const isS2Occupied = boardData[s2] !== undefined;
+            
+            let moveStr = "";
+            if (isS2Occupied) {
+                // Merge Pattern: Src1, Src2, Target
+                moveStr = `${s1}${t}^${s2}${t}`;
+                log(`Detecting Merge: ${moveStr}`);
+            } else {
+                // Split Pattern: Src, Tgt1, Tgt2
+                moveStr = `${s1}${s2}^${s1}${t}`;
+                log(`Detecting Split: ${moveStr}`);
+            }
+            
+            sendMove(moveStr);
+        }
     }
 }
 
+function updateSelectionVisuals() {
+    // Clear all
+    document.querySelectorAll('.square').forEach(e => e.classList.remove('sq-sel-src', 'sq-sel-tgt'));
+    
+    // Apply classes
+    selectedSquares.forEach((id, index) => {
+        const el = document.getElementById(id);
+        if (index === 0) el.classList.add('sq-sel-src'); // First click usually source
+        else el.classList.add('sq-sel-tgt');
+    });
+}
+
 function clearSelection() {
-    document.querySelectorAll('.sq-sel').forEach(e => e.classList.remove('sq-sel'));
     selectedSquares = [];
+    updateSelectionVisuals();
 }
 
 function toggleMode() {
     isQuantumMode = !isQuantumMode;
-    document.getElementById('mode-btn').innerText = isQuantumMode ? "MODE: QUANTUM (3)" : "MODE: STANDARD (2)";
-    document.getElementById('mode-btn').style.color = isQuantumMode ? "cyan" : "#888";
+    const txt = document.getElementById('mode-text');
+    const instr = document.getElementById('instruction-text');
+    
+    if (isQuantumMode) {
+        txt.innerText = "QUANTUM (3 Clicks)";
+        txt.style.color = "cyan";
+        instr.innerHTML = "<strong>QUANTUM MODE:</strong><br>Split: Click [Source] then [Target 1] then [Target 2].<br>Merge: Click [Piece 1] then [Piece 2] then [Target].";
+    } else {
+        txt.innerText = "STANDARD (Drag & Drop)";
+        txt.style.color = "#888";
+        instr.innerHTML = "<strong>STANDARD MODE:</strong><br>Drag pieces to destination.<br>Or click [Source] then [Target].";
+    }
     clearSelection();
 }
 
+// --- NETWORK ---
 async function sendMove(moveStr) {
+    log(`Sending: ${moveStr}...`);
     clearSelection();
+    
     try {
         const res = await fetch(`/tournament/move/${matchId}`, {
             method: 'POST',
@@ -140,58 +290,117 @@ async function sendMove(moveStr) {
             body: JSON.stringify({ move_str: moveStr })
         });
         const data = await res.json();
+        
         if (data.success) {
+            log("Move Accepted.", "#0f0");
             boardData = data.board_data;
             p1Time = data.p1_time;
             p2Time = data.p2_time;
             currentTurn = (currentTurn === 'white') ? 'black' : 'white';
+            
+            if (data.game_over) {
+                alert("GAME OVER: " + data.winner);
+            }
             renderBoard();
         } else {
-            alert(data.message);
+            log("Error: " + data.message, "#f44");
         }
-    } catch(e) { console.error(e); }
+    } catch (e) {
+        log("Connection Error", "#f44");
+    }
+}
+
+// --- UTILS ---
+function log(msg, color="#aaa") {
+    const box = document.getElementById('logs');
+    box.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
+    box.scrollTop = box.scrollHeight;
 }
 
 function formatTime(s) {
-    const m = Math.floor(s / 60).toString().padStart(2, '0');
-    const sc = Math.floor(s % 60).toString().padStart(2, '0');
-    return `${m}:${sc}`;
+    if (s < 0) s = 0;
+    const m = Math.floor(s/60).toString().padStart(2,'0');
+    const sec = Math.floor(s%60).toString().padStart(2,'0');
+    return `${m}:${sec}`;
 }
 
 function startTimer() {
     if (timerInterval) clearInterval(timerInterval);
     timerInterval = setInterval(() => {
-        if (currentTurn === 'white' && p1Time > 0) p1Time -= 1;
-        if (currentTurn === 'black' && p2Time > 0) p2Time -= 1;
+        if (currentTurn === 'white') p1Time--;
+        else p2Time--;
         
         document.getElementById('digits-white').innerText = formatTime(p1Time);
         document.getElementById('digits-black').innerText = formatTime(p2Time);
         
-        document.getElementById('timer-white').style.opacity = currentTurn === 'white' ? '1' : '0.3';
-        document.getElementById('timer-black').style.opacity = currentTurn === 'black' ? '1' : '0.3';
-
+        // Highlight active timer
+        document.getElementById('timer-white').style.boxShadow = (currentTurn === 'white') ? "0 0 15px cyan" : "none";
+        document.getElementById('timer-black').style.boxShadow = (currentTurn === 'black') ? "0 0 15px #f70" : "none";
+        
         if (p1Time <= 0 || p2Time <= 0) {
             clearInterval(timerInterval);
-            alert("TIME OUT!");
+            alert("TIME OUT");
         }
     }, 1000);
 }
 
+// Boot
 renderBoard();
 startTimer();
 </script>
 
 <style>
-    .dashboard-wrapper { display: grid; grid-template-columns: 450px 1fr; gap: 20px; max-width: 900px; margin: 40px auto; }
-    .board-grid { display: grid; grid-template-columns: repeat(8, 1fr); width: 400px; height: 400px; border: 4px solid var(--primary); }
-    .square { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-    .sq-light { background: #1a2a1a; } .sq-dark { background: #000; }
-    .sq-sel { background: rgba(0, 255, 255, 0.3) !important; box-shadow: inset 0 0 10px cyan; }
+    /* LAYOUT */
+    .dashboard-wrapper { display: grid; grid-template-columns: 500px 1fr; gap: 30px; max-width: 1000px; margin: 40px auto; }
+    
+    /* BOARD */
+    .board-frame { border: 4px solid var(--primary-dim); padding: 5px; background: #000; box-shadow: 0 0 30px rgba(0,255,65,0.1); }
+    .board-grid { display: grid; grid-template-columns: repeat(8, 1fr); width: 480px; height: 480px; }
+    
+    .square { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
+    .sq-light { background: #111; }
+    .sq-dark { background: #000; }
+    
+    /* SELECTION STATES */
+    .sq-sel-src { background: rgba(0, 255, 255, 0.25) !important; box-shadow: inset 0 0 15px cyan; }
+    .sq-sel-tgt { background: rgba(0, 255, 0, 0.25) !important; box-shadow: inset 0 0 15px lime; }
+
+    /* PIECES (SVG) */
+    .piece-wrapper { width: 80%; height: 80%; transition: transform 0.1s; cursor: grab; }
+    .piece-wrapper:active { transform: scale(1.1); cursor: grabbing; }
+    
+    /* Neon Colors */
+    .piece-white { color: cyan; filter: drop-shadow(0 0 5px cyan); }
+    .piece-black { color: #ff4400; filter: drop-shadow(0 0 5px #ff4400); }
+
+    /* HUD PANELS */
     .panel { background: rgba(0, 15, 0, 0.9); border: 1px solid var(--primary-dim); padding: 15px; margin-bottom: 15px; }
-    .timer-box { border: 2px solid; padding: 10px; text-align: center; border-radius: 5px; transition: opacity 0.2s; }
-    .digits { font-size: 2rem; font-weight: bold; display: block; color: #fff; font-family: monospace; }
-    .label { font-size: 0.7rem; color: #aaa; letter-spacing: 2px; }
-    .btn-mode { background: transparent; border: 1px solid var(--primary-dim); color: #888; padding: 10px; width: 100%; cursor: pointer; margin-bottom: 5px; }
-    .btn-clear { background: #333; color: white; border: none; padding: 5px; width: 100%; cursor: pointer; }
+    .panel-header { border-bottom: 1px solid var(--primary-dim); margin-bottom: 10px; font-size: 0.8rem; color: var(--primary); letter-spacing: 2px; }
+    
+    /* TIMER */
+    .timer-row { display: flex; justify-content: space-between; gap: 10px; }
+    .timer-box { border: 2px solid; padding: 10px; text-align: center; border-radius: 5px; width: 48%; transition: box-shadow 0.3s; }
+    .digits { font-size: 1.8rem; font-family: monospace; color: #fff; font-weight: bold; }
+    .label { font-size: 0.7rem; color: #aaa; }
+    .turn-status { text-align: center; margin-top: 10px; font-weight: bold; letter-spacing: 1px; font-size: 1.1rem; }
+
+    /* LOGS */
+    .logs-panel { height: 150px; overflow-y: auto; background: #000; font-family: monospace; font-size: 0.8rem; color: var(--primary); }
+    
+    /* INSTRUCTIONS */
+    .instruction-box { background: rgba(255,255,255,0.05); padding: 10px; font-size: 0.8rem; color: #ccc; margin-top: 10px; border-left: 3px solid var(--primary); }
+
+    /* SWITCH */
+    .mode-switch-container { display: flex; align-items: center; justify-content: space-between; }
+    .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border: 1px solid #555; }
+    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 3px; background-color: #888; transition: .4s; }
+    input:checked + .slider { background-color: rgba(0, 255, 255, 0.3); border-color: cyan; }
+    input:checked + .slider:before { transform: translateX(26px); background-color: cyan; box-shadow: 0 0 10px cyan; }
+    .slider.round { border-radius: 24px; } .slider.round:before { border-radius: 50%; }
+    
+    .btn-action { background: #333; color: #fff; border: 1px solid #666; padding: 5px 10px; cursor: pointer; width: 100%; }
+    .btn-action:hover { background: #444; border-color: #fff; }
 </style>
 {% endblock %}
