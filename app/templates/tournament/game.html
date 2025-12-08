@@ -3,38 +3,53 @@
 {% block content %}
 <div class="dashboard-wrapper">
     <div class="board-column">
-        <div class="board-frame"><div id="quantum-board" class="board-grid"></div></div>
+        <div class="board-frame">
+            <div id="quantum-board" class="board-grid"></div>
+        </div>
     </div>
 
     <div class="hud-column">
+        
         <div class="panel turn-panel">
             <div class="panel-header">>> CHRONOMETER</div>
-            <div class="timer-row">
-                <div class="timer-box" id="timer-white" style="border-color: #0ff;"><div class="label">WHITE</div><div class="digits" id="digits-white">10:00</div></div>
-                <div class="timer-box" id="timer-black" style="border-color: #f70;"><div class="label">BLACK</div><div class="digits" id="digits-black">10:00</div></div>
+            
+            <div id="signal-box" style="margin-bottom: 10px; padding: 10px; text-align: center; border: 1px solid #333; background: #000;">
+                <div id="turn-display" class="turn-status">INITIALIZING...</div>
+                <div id="ai-loader" class="blink" style="display: none; color: #0f0; margin-top:5px;">AI THINKING...</div>
             </div>
-            <div id="turn-display" class="turn-status">...</div>
-            <div id="ai-loader" class="blink" style="display: none; color: #0f0; text-align:center;">AI COMPUTING...</div>
+
+            <div class="timer-row">
+                <div class="timer-box" id="timer-white" style="border-color: #0ff;">
+                    <div class="label">WHITE</div><div class="digits" id="digits-white">10:00</div>
+                </div>
+                <div class="timer-box" id="timer-black" style="border-color: #f70;">
+                    <div class="label">BLACK</div><div class="digits" id="digits-black">10:00</div>
+                </div>
+            </div>
         </div>
 
         <div class="panel info-panel">
             <div class="info-row"><span>YOU:</span> <strong style="color:white">{{ user_color|upper }}</strong></div>
             <div class="info-row" style="margin-top:5px; border-top:1px dashed #444; padding-top:5px;">
-                <span>DIFFICULTY:</span> <span style="color:cyan">{{ match.ai_difficulty|default('NORMAL')|upper }}</span>
+                <span>MODE:</span> <span style="color:cyan">{{ difficulty_name|default('SUPERPOSITION')|upper }}</span>
             </div>
         </div>
 
         <div class="panel control-panel">
+            <div class="panel-header">>> INTERFACE</div>
             <div class="mode-switch-container">
                 <span id="mode-text" style="color: #888;">STANDARD (Swipe)</span>
-                <label class="switch"><input type="checkbox" id="quantum-toggle" onclick="toggleMode()"><span class="slider round"></span></label>
+                <label class="switch">
+                    <input type="checkbox" id="quantum-toggle" onclick="toggleMode()">
+                    <span class="slider round"></span>
+                </label>
             </div>
             <button onclick="clearSelection()" class="btn-action" style="margin-top:10px;">RESET SELECTION</button>
         </div>
         
         <div class="panel logs-panel" id="logs"><div class="log-entry">> Connected.</div></div>
         
-        <div id="radar-popup" style="display:none; position:absolute; z-index:100; background:rgba(0,0,0,0.9); border:1px solid cyan; padding:10px; border-radius:5px;">
+        <div id="radar-popup" style="display:none; position:absolute; z-index:100; background:rgba(0,0,0,0.9); border:1px solid cyan; padding:10px;">
             <div style="color:cyan; font-size:0.7rem; margin-bottom:5px;">PHASE RADAR</div>
             <div style="width:60px; height:60px; border-radius:50%; border:1px solid #555; position:relative;">
                 <div id="radar-needle" style="width:50%; height:2px; background:cyan; position:absolute; top:50%; left:50%; transform-origin:left;"></div>
@@ -47,6 +62,7 @@
 <div id="game-data" data-match-id="{{ match.id }}" data-board='{{ board_data|safe }}' data-user-color="{{ user_color }}" data-turn="{{ current_turn }}" data-p1="{{ p1_time }}" data-p2="{{ p2_time }}"></div>
 
 <script>
+// ASSETS
 const SVGS = {
     'P': '<svg viewBox="0 0 100 100"><path d="M50 15 L80 85 L20 85 Z" fill="currentColor"/><rect x="42" y="30" width="16" height="30" fill="#000"/><circle cx="50" cy="45" r="4" fill="currentColor"/></svg>',
     'R': '<svg viewBox="0 0 100 100"><path d="M20 20 L40 20 L40 35 L60 35 L60 20 L80 20 L80 85 L20 85 Z" fill="currentColor"/><rect x="30" y="50" width="40" height="5" fill="#000"/></svg>',
@@ -61,6 +77,7 @@ const ROWS = ['8','7','6','5','4','3','2','1'];
 const gameData = document.getElementById('game-data');
 const matchId = gameData.dataset.matchId;
 const userColor = gameData.dataset.userColor;
+
 let currentTurn = gameData.dataset.turn;
 let boardData = JSON.parse(gameData.dataset.board);
 let p1Time = parseFloat(gameData.dataset.p1) || 600.0;
@@ -87,12 +104,8 @@ function renderBoard() {
             sq.ondragover = (e) => e.preventDefault();
             sq.ondrop = (e) => handleDrop(e, id);
             sq.onclick = () => handleClick(id);
-            // Right Click for Radar
             sq.oncontextmenu = (e) => {
-                if(boardData[id]) {
-                    e.preventDefault();
-                    showRadar(e.pageX, e.pageY, boardData[id].phase);
-                }
+                if(boardData[id]) { e.preventDefault(); showRadar(e.pageX, e.pageY, boardData[id].phase); }
             };
 
             if (boardData[id]) {
@@ -105,7 +118,6 @@ function renderBoard() {
                 
                 if(data.prob && data.prob < 0.99) pieceWrap.classList.add('quantum-ghost');
                 
-                // Entanglement Ring
                 if(data.entangle_color) {
                     const ring = document.createElement('div');
                     ring.className = 'entangle-ring';
@@ -123,16 +135,26 @@ function renderBoard() {
         });
     });
     
-    document.getElementById('turn-display').innerText = (currentTurn === 'white') ? "■ WHITE TO MOVE" : "■ BLACK TO MOVE";
-    document.getElementById('turn-display').style.color = (currentTurn === 'white') ? "#0ff" : "#f70";
+    // ROBUST TURN INDICATOR
+    const turnEl = document.getElementById('turn-display');
+    const signalBox = document.getElementById('signal-box');
+    
+    if (currentTurn === 'white') {
+        turnEl.innerText = "■ WHITE TO MOVE";
+        turnEl.style.color = "#0ff";
+        signalBox.style.borderColor = (userColor === 'white') ? "#0ff" : "#333";
+    } else {
+        turnEl.innerText = "■ BLACK TO MOVE";
+        turnEl.style.color = "#f70";
+        signalBox.style.borderColor = (userColor === 'black') ? "#f70" : "#333";
+    }
 }
 
 function showRadar(x, y, phase) {
     const popup = document.getElementById('radar-popup');
     popup.style.display = 'block';
-    popup.style.left = x + 'px';
-    popup.style.top = y + 'px';
-    document.getElementById('radar-needle').style.transform = `rotate(${-phase}deg)`; // Negative for standard math angle
+    popup.style.left = x + 'px'; popup.style.top = y + 'px';
+    document.getElementById('radar-needle').style.transform = `rotate(${-phase}deg)`;
     document.getElementById('radar-text').innerText = phase + "°";
     setTimeout(() => { document.addEventListener('click', () => { popup.style.display = 'none'; }, {once:true}); }, 100);
 }
@@ -203,7 +225,10 @@ async function sendMove(moveStr) {
             boardData = data.board_data;
             p1Time = parseFloat(data.p1_time) || p1Time;
             p2Time = parseFloat(data.p2_time) || p2Time;
-            currentTurn = (currentTurn === 'white') ? 'black' : 'white';
+            
+            // FIX: Rely ONLY on Server Truth
+            currentTurn = data.current_turn;
+            
             renderBoard();
             if(data.ai_moved) log("AI Executed Counter-Move.", "#f70");
             if(data.game_over) alert("GAME OVER: " + data.winner.toUpperCase() + " WINS!");
@@ -281,7 +306,7 @@ startTimer();
     .timer-box { border: 2px solid; padding: 10px; text-align: center; border-radius: 5px; width: 48%; transition: box-shadow 0.3s; }
     .digits { font-size: 1.8rem; font-family: monospace; color: #fff; font-weight: bold; }
     .label { font-size: 0.7rem; color: #aaa; }
-    .turn-status { text-align: center; margin-top: 10px; font-weight: bold; letter-spacing: 1px; font-size: 1.1rem; }
+    .turn-status { text-align: center; font-weight: bold; letter-spacing: 1px; font-size: 1.1rem; }
     .logs-panel { height: 150px; overflow-y: auto; background: #000; font-family: monospace; font-size: 0.8rem; color: var(--primary); }
     .instruction-box { background: rgba(255,255,255,0.05); padding: 10px; font-size: 0.8rem; color: #ccc; margin-top: 10px; border-left: 3px solid var(--primary); }
     
