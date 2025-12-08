@@ -5,13 +5,10 @@
     <div class="board-column">
         <div class="board-frame">
             <div id="quantum-board" class="board-grid"></div>
-            
-            <div id="drag-proxy" class="drag-proxy" style="display:none;"></div>
         </div>
     </div>
 
     <div class="hud-column">
-        
         <div class="panel turn-panel">
             <div class="panel-header">>> CHRONOMETER</div>
             <div class="timer-row">
@@ -35,20 +32,17 @@
 
         <div class="panel control-panel">
             <div class="panel-header">>> INTERFACE MODE</div>
-            
             <div class="mode-switch-container">
-                <span id="mode-text" style="color: #888; font-size: 0.8rem;">STANDARD (Drag & Drop)</span>
+                <span id="mode-text" style="color: #888; font-size: 0.8rem;">STANDARD (Swipe/Drag)</span>
                 <label class="switch">
                     <input type="checkbox" id="quantum-toggle" onclick="toggleMode()">
                     <span class="slider round"></span>
                 </label>
             </div>
-
             <div id="instruction-text" class="instruction-box">
                 Drag pieces to move.
             </div>
-            
-            <div style="display:flex; gap:10px; margin-top:10px;">
+            <div style="margin-top:10px;">
                 <button onclick="clearSelection()" class="btn-action">RESET SELECTION</button>
             </div>
         </div>
@@ -56,7 +50,6 @@
         <div class="panel logs-panel" id="logs">
             <div class="log-entry">> Uplink Established.</div>
         </div>
-
     </div>
 </div>
 
@@ -70,27 +63,19 @@
 </div>
 
 <script>
-// --- FUTURISTIC ASSETS (SVG PATHS) ---
-// Custom drawn for "Matrix/Tron" aesthetic. No Crosses.
+// --- CYBERPUNK CHESS PIECES (SVG) ---
 const SVGS = {
-    // Pawn: A simple data pyramid
-    'P': '<svg viewBox="0 0 100 100"><path d="M50 20 L80 80 L20 80 Z" fill="currentColor"/><rect x="45" y="10" width="10" height="10" fill="currentColor"/></svg>',
-    // Rook: A fortified server block
-    'R': '<svg viewBox="0 0 100 100"><rect x="25" y="30" width="50" height="50" fill="currentColor"/><rect x="25" y="20" width="10" height="15" fill="currentColor"/><rect x="45" y="20" width="10" height="15" fill="currentColor"/><rect x="65" y="20" width="10" height="15" fill="currentColor"/><rect x="20" y="80" width="60" height="10" fill="currentColor"/></svg>',
-    // Knight: Geometric Horse Profile
-    'N': '<svg viewBox="0 0 100 100"><path d="M30 80 L70 80 L70 40 L80 30 L60 10 L30 30 L40 50 L30 80" fill="currentColor"/></svg>',
-    // Bishop: An angular data shard/obelisk
-    'B': '<svg viewBox="0 0 100 100"><path d="M50 10 L80 50 L50 90 L20 50 Z" fill="currentColor"/><circle cx="50" cy="30" r="5" fill="#000"/></svg>',
-    // Queen: A Radiant Crown (Spikes)
-    'Q': '<svg viewBox="0 0 100 100"><path d="M20 80 L30 40 L40 60 L50 10 L60 60 L70 40 L80 80 Z" fill="currentColor"/><circle cx="50" cy="90" r="5" fill="currentColor"/></svg>',
-    // King: The Monolith (No Cross) - A tall, imposing structure
-    'K': '<svg viewBox="0 0 100 100"><rect x="35" y="20" width="30" height="60" fill="currentColor"/><rect x="25" y="80" width="50" height="10" fill="currentColor"/><path d="M35 20 L50 5 L65 20 Z" fill="currentColor"/></svg>'
+    'P': '<svg viewBox="0 0 100 100"><path d="M50 15 L80 85 L20 85 Z" fill="currentColor"/><circle cx="50" cy="35" r="10" fill="#000"/></svg>', // Triangle with eye
+    'R': '<svg viewBox="0 0 100 100"><path d="M20 20 L40 20 L40 35 L60 35 L60 20 L80 20 L80 85 L20 85 Z" fill="currentColor"/><rect x="30" y="50" width="40" height="5" fill="#000"/></svg>', // Tower
+    'N': '<svg viewBox="0 0 100 100"><path d="M25 85 L75 85 L65 35 L75 25 L55 15 L25 35 L35 55 Z" fill="currentColor"/><circle cx="45" cy="35" r="5" fill="#000"/></svg>', // Angular Horse
+    'B': '<svg viewBox="0 0 100 100"><path d="M50 10 L80 50 L50 90 L20 50 Z" fill="currentColor"/><rect x="45" y="25" width="10" height="50" fill="#000"/></svg>', // Obelisk
+    'Q': '<svg viewBox="0 0 100 100"><path d="M15 85 L25 35 L40 55 L50 15 L60 55 L75 35 L85 85 Z" fill="currentColor"/><circle cx="50" cy="85" r="5" fill="#000"/></svg>', // Spike Crown
+    'K': '<svg viewBox="0 0 100 100"><rect x="35" y="15" width="30" height="70" fill="currentColor"/><path d="M35 15 L50 0 L65 15 Z" fill="currentColor"/><rect x="25" y="75" width="50" height="10" fill="currentColor"/></svg>' // Monolith (No Cross)
 };
-
-// Map lowercases
 const PIECE_MAP = { ...SVGS, 'p':SVGS.P, 'r':SVGS.R, 'n':SVGS.N, 'b':SVGS.B, 'q':SVGS.Q, 'k':SVGS.K };
 
-// --- STATE ---
+const COLS = ['a','b','c','d','e','f','g','h'];
+const ROWS = ['8','7','6','5','4','3','2','1'];
 const gameData = document.getElementById('game-data');
 const matchId = gameData.dataset.matchId;
 const userColor = gameData.dataset.userColor;
@@ -98,20 +83,14 @@ let currentTurn = gameData.dataset.turn;
 let boardData = JSON.parse(gameData.dataset.board);
 let p1Time = parseFloat(gameData.dataset.p1);
 let p2Time = parseFloat(gameData.dataset.p2);
-
-// UI State
 let selectedSquares = [];
 let isQuantumMode = false;
+let draggedId = null;
 let timerInterval = null;
-let draggedPieceId = null; // Coordinates of piece being dragged
 
-// --- RENDERER ---
 function renderBoard() {
     const boardEl = document.getElementById('quantum-board');
     boardEl.innerHTML = ''; 
-    const COLS = ['a','b','c','d','e','f','g','h'];
-    const ROWS = ['8','7','6','5','4','3','2','1'];
-    
     let rRows = (userColor === 'black') ? [...ROWS].reverse() : ROWS;
     let rCols = (userColor === 'black') ? [...COLS].reverse() : COLS;
 
@@ -123,166 +102,108 @@ function renderBoard() {
             sq.id = id;
             sq.classList.add((COLS.indexOf(col)+parseInt(row))%2===0 ? 'sq-dark':'sq-light');
 
-            // Render Piece
+            // --- DROP ZONE ---
+            sq.ondragover = (e) => e.preventDefault();
+            sq.ondrop = (e) => handleDrop(e, id);
+            sq.onclick = () => handleClick(id);
+
             if (boardData[id]) {
-                const data = boardData[id]; 
-                const p = data.type || data; // Handle both simple/complex format
+                const data = boardData[id];
+                const p = data.type || data;
                 const colorClass = (p === p.toUpperCase()) ? 'piece-white' : 'piece-black';
                 
-                const pieceContainer = document.createElement('div');
-                pieceContainer.className = `piece-wrapper ${colorClass}`;
-                pieceContainer.innerHTML = PIECE_MAP[p];
+                const pieceWrap = document.createElement('div');
+                pieceWrap.className = `piece-wrapper ${colorClass}`;
+                pieceWrap.innerHTML = PIECE_MAP[p];
                 
-                // Opacity for probability
-                if (data.prob && data.prob < 1.0) pieceContainer.style.opacity = "0.5";
-                
-                // DRAG HANDLERS (Only if standard mode)
-                pieceContainer.draggable = true;
-                pieceContainer.ondragstart = (e) => handleDragStart(e, id);
-                
-                sq.appendChild(pieceContainer);
+                if(data.prob && data.prob < 1.0) pieceWrap.style.opacity = "0.6";
+
+                // --- DRAG SOURCE ---
+                if (!isQuantumMode && currentTurn === userColor) {
+                    pieceWrap.draggable = true;
+                    pieceWrap.ondragstart = (e) => {
+                        draggedId = id;
+                        e.dataTransfer.effectAllowed = 'move';
+                    };
+                }
+                sq.appendChild(pieceWrap);
             }
-
-            // EVENT HANDLERS
-            sq.onclick = () => handleClick(id);
-            sq.ondragover = (e) => e.preventDefault(); // Allow drop
-            sq.ondrop = (e) => handleDrop(e, id);
-
             boardEl.appendChild(sq);
         });
     });
     
-    // Update Turn Text
-    const turnBox = document.getElementById('turn-display');
-    if (currentTurn === 'white') {
-        turnBox.innerText = "■ WHITE TO MOVE";
-        turnBox.style.color = "#0ff";
-    } else {
-        turnBox.innerText = "■ BLACK TO MOVE";
-        turnBox.style.color = "#f70";
-    }
+    // Update HUD
+    const turnEl = document.getElementById('turn-display');
+    turnEl.innerText = (currentTurn === 'white') ? "■ WHITE TURN" : "■ BLACK TURN";
+    turnEl.style.color = (currentTurn === 'white') ? "#0ff" : "#f70";
 }
 
-// --- INTERACTION LOGIC ---
-
-// 1. DRAG & DROP (Standard Move)
-function handleDragStart(e, srcId) {
-    if (isQuantumMode || currentTurn !== userColor) {
-        e.preventDefault(); return;
-    }
-    draggedPieceId = srcId;
-    e.dataTransfer.effectAllowed = 'move';
-    // Optional: Set custom drag image if desired
-}
-
-function handleDrop(e, tgtId) {
+// --- STANDARD MODE (SWIPE/DRAG) ---
+function handleDrop(e, targetId) {
+    if (isQuantumMode || !draggedId || draggedId === targetId) return;
     e.preventDefault();
-    if (!draggedPieceId) return;
-    
-    // Execute Standard Move
-    const moveStr = draggedPieceId + tgtId;
+    const moveStr = draggedId + targetId;
     sendMove(moveStr);
-    draggedPieceId = null;
+    draggedId = null;
 }
 
-// 2. CLICK LOGIC (Quantum & Tap-to-Move)
+// --- QUANTUM MODE (CLICK) ---
 function handleClick(id) {
     if (currentTurn !== userColor) return;
-
-    // Toggle Selection
-    const el = document.getElementById(id);
+    
     if (selectedSquares.includes(id)) {
-        selectedSquares = selectedSquares.filter(s => s !== id);
-        el.classList.remove('sq-sel-src', 'sq-sel-tgt');
+        clearSelection();
         return;
     }
 
-    // Add to selection sequence
-    selectedSquares.push(id);
-    updateSelectionVisuals();
-
-    // CHECK FOR ACTION
-    if (!isQuantumMode) {
-        // Standard Mode: 2 Clicks = Move
-        if (selectedSquares.length === 2) {
-            sendMove(selectedSquares.join(''));
-        }
-    } else {
-        // Quantum Mode: 3 Clicks
-        if (selectedSquares.length === 3) {
-            const s1 = selectedSquares[0];
-            const s2 = selectedSquares[1];
-            const t  = selectedSquares[2];
-            
-            // Heuristic for Merge vs Split
-            // If the first two clicks are pieces of the same color, it's a MERGE.
-            // If the first click is piece, and 2nd is empty (or enemy), it's a SPLIT.
-            
-            // Construct move string
-            // Split: s1->s2 & s1->t  ==> s1s2^s1t
-            // Merge: s1->t  & s2->t  ==> s1t^s2t
-            
-            // Simple logic: We will assume the user clicks [Source] [Target1] [Target2] for Split
-            // And [Source1] [Source2] [Target] for Merge
-            
-            // To detect, check boardData for s2
-            const isS2Occupied = boardData[s2] !== undefined;
-            
-            let moveStr = "";
-            if (isS2Occupied) {
-                // Merge Pattern: Src1, Src2, Target
-                moveStr = `${s1}${t}^${s2}${t}`;
-                log(`Detecting Merge: ${moveStr}`);
-            } else {
-                // Split Pattern: Src, Tgt1, Tgt2
-                moveStr = `${s1}${s2}^${s1}${t}`;
-                log(`Detecting Split: ${moveStr}`);
-            }
-            
-            sendMove(moveStr);
-        }
-    }
-}
-
-function updateSelectionVisuals() {
-    // Clear all
-    document.querySelectorAll('.square').forEach(e => e.classList.remove('sq-sel-src', 'sq-sel-tgt'));
-    
-    // Apply classes
-    selectedSquares.forEach((id, index) => {
+    const limit = isQuantumMode ? 3 : 2;
+    if (selectedSquares.length < limit) {
+        selectedSquares.push(id);
         const el = document.getElementById(id);
-        if (index === 0) el.classList.add('sq-sel-src'); // First click usually source
+        if(selectedSquares.length===1) el.classList.add('sq-sel-src');
         else el.classList.add('sq-sel-tgt');
-    });
+    }
+
+    if (!isQuantumMode && selectedSquares.length === 2) {
+        // Fallback for tap-to-move in Standard mode
+        sendMove(selectedSquares.join(''));
+    } else if (isQuantumMode && selectedSquares.length === 3) {
+        const s1 = selectedSquares[0];
+        const s2 = selectedSquares[1];
+        const t = selectedSquares[2];
+        // Heuristic: If s2 occupied -> Merge (Src1 Src2 Tgt)
+        // If s2 empty -> Split (Src Tgt1 Tgt2)
+        const isS2Occupied = boardData[s2] !== undefined;
+        let moveStr = isS2Occupied ? `${s1}${t}^${s2}${t}` : `${s1}${s2}^${s1}${t}`;
+        sendMove(moveStr);
+    }
 }
 
 function clearSelection() {
     selectedSquares = [];
-    updateSelectionVisuals();
+    document.querySelectorAll('.square').forEach(e => e.classList.remove('sq-sel-src','sq-sel-tgt'));
 }
 
 function toggleMode() {
     isQuantumMode = !isQuantumMode;
     const txt = document.getElementById('mode-text');
     const instr = document.getElementById('instruction-text');
-    
     if (isQuantumMode) {
         txt.innerText = "QUANTUM (3 Clicks)";
         txt.style.color = "cyan";
-        instr.innerHTML = "<strong>QUANTUM MODE:</strong><br>Split: Click [Source] then [Target 1] then [Target 2].<br>Merge: Click [Piece 1] then [Piece 2] then [Target].";
+        instr.innerHTML = "<strong>QUANTUM:</strong><br>Split: [Src] [Tgt1] [Tgt2]<br>Merge: [Src1] [Src2] [Tgt]";
     } else {
-        txt.innerText = "STANDARD (Drag & Drop)";
+        txt.innerText = "STANDARD (Swipe)";
         txt.style.color = "#888";
-        instr.innerHTML = "<strong>STANDARD MODE:</strong><br>Drag pieces to destination.<br>Or click [Source] then [Target].";
+        instr.innerText = "Drag pieces to move.";
     }
     clearSelection();
+    renderBoard(); // Re-render to update draggable status
 }
 
-// --- NETWORK ---
 async function sendMove(moveStr) {
-    log(`Sending: ${moveStr}...`);
     clearSelection();
-    
+    log(`Sending: ${moveStr}...`);
     try {
         const res = await fetch(`/tournament/move/${matchId}`, {
             method: 'POST',
@@ -290,61 +211,43 @@ async function sendMove(moveStr) {
             body: JSON.stringify({ move_str: moveStr })
         });
         const data = await res.json();
-        
         if (data.success) {
             log("Move Accepted.", "#0f0");
             boardData = data.board_data;
-            p1Time = data.p1_time;
-            p2Time = data.p2_time;
+            p1Time = data.p1_time; p2Time = data.p2_time;
             currentTurn = (currentTurn === 'white') ? 'black' : 'white';
-            
-            if (data.game_over) {
-                alert("GAME OVER: " + data.winner);
-            }
             renderBoard();
+            if(data.game_over) alert("GAME OVER: " + data.winner);
         } else {
             log("Error: " + data.message, "#f44");
         }
-    } catch (e) {
-        log("Connection Error", "#f44");
-    }
+    } catch(e) { log("Connection Error", "#f44"); }
 }
 
-// --- UTILS ---
 function log(msg, color="#aaa") {
-    const box = document.getElementById('logs');
-    box.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
-    box.scrollTop = box.scrollHeight;
+    const b = document.getElementById('logs');
+    b.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
+    b.scrollTop = b.scrollHeight;
 }
 
 function formatTime(s) {
-    if (s < 0) s = 0;
     const m = Math.floor(s/60).toString().padStart(2,'0');
     const sec = Math.floor(s%60).toString().padStart(2,'0');
     return `${m}:${sec}`;
 }
 
 function startTimer() {
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-        if (currentTurn === 'white') p1Time--;
-        else p2Time--;
-        
+    if(timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(()=>{
+        if(currentTurn==='white' && p1Time>0) p1Time--;
+        if(currentTurn==='black' && p2Time>0) p2Time--;
         document.getElementById('digits-white').innerText = formatTime(p1Time);
         document.getElementById('digits-black').innerText = formatTime(p2Time);
-        
-        // Highlight active timer
-        document.getElementById('timer-white').style.boxShadow = (currentTurn === 'white') ? "0 0 15px cyan" : "none";
-        document.getElementById('timer-black').style.boxShadow = (currentTurn === 'black') ? "0 0 15px #f70" : "none";
-        
-        if (p1Time <= 0 || p2Time <= 0) {
-            clearInterval(timerInterval);
-            alert("TIME OUT");
-        }
+        document.getElementById('timer-white').style.boxShadow = (currentTurn==='white')?"0 0 15px cyan":"none";
+        document.getElementById('timer-black').style.boxShadow = (currentTurn==='black')?"0 0 15px #f70":"none";
     }, 1000);
 }
 
-// Boot
 renderBoard();
 startTimer();
 </script>
@@ -356,40 +259,30 @@ startTimer();
     /* BOARD */
     .board-frame { border: 4px solid var(--primary-dim); padding: 5px; background: #000; box-shadow: 0 0 30px rgba(0,255,65,0.1); }
     .board-grid { display: grid; grid-template-columns: repeat(8, 1fr); width: 480px; height: 480px; }
-    
     .square { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
-    .sq-light { background: #111; }
-    .sq-dark { background: #000; }
+    .sq-light { background: #111; } .sq-dark { background: #000; }
     
-    /* SELECTION STATES */
+    /* SELECTION */
     .sq-sel-src { background: rgba(0, 255, 255, 0.25) !important; box-shadow: inset 0 0 15px cyan; }
     .sq-sel-tgt { background: rgba(0, 255, 0, 0.25) !important; box-shadow: inset 0 0 15px lime; }
 
-    /* PIECES (SVG) */
-    .piece-wrapper { width: 80%; height: 80%; transition: transform 0.1s; cursor: grab; }
+    /* PIECES */
+    .piece-wrapper { width: 85%; height: 85%; transition: transform 0.1s; cursor: grab; }
     .piece-wrapper:active { transform: scale(1.1); cursor: grabbing; }
-    
-    /* Neon Colors */
     .piece-white { color: cyan; filter: drop-shadow(0 0 5px cyan); }
     .piece-black { color: #ff4400; filter: drop-shadow(0 0 5px #ff4400); }
 
-    /* HUD PANELS */
+    /* HUD */
     .panel { background: rgba(0, 15, 0, 0.9); border: 1px solid var(--primary-dim); padding: 15px; margin-bottom: 15px; }
     .panel-header { border-bottom: 1px solid var(--primary-dim); margin-bottom: 10px; font-size: 0.8rem; color: var(--primary); letter-spacing: 2px; }
-    
-    /* TIMER */
     .timer-row { display: flex; justify-content: space-between; gap: 10px; }
     .timer-box { border: 2px solid; padding: 10px; text-align: center; border-radius: 5px; width: 48%; transition: box-shadow 0.3s; }
     .digits { font-size: 1.8rem; font-family: monospace; color: #fff; font-weight: bold; }
     .label { font-size: 0.7rem; color: #aaa; }
     .turn-status { text-align: center; margin-top: 10px; font-weight: bold; letter-spacing: 1px; font-size: 1.1rem; }
-
-    /* LOGS */
     .logs-panel { height: 150px; overflow-y: auto; background: #000; font-family: monospace; font-size: 0.8rem; color: var(--primary); }
-    
-    /* INSTRUCTIONS */
     .instruction-box { background: rgba(255,255,255,0.05); padding: 10px; font-size: 0.8rem; color: #ccc; margin-top: 10px; border-left: 3px solid var(--primary); }
-
+    
     /* SWITCH */
     .mode-switch-container { display: flex; align-items: center; justify-content: space-between; }
     .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
@@ -399,7 +292,6 @@ startTimer();
     input:checked + .slider { background-color: rgba(0, 255, 255, 0.3); border-color: cyan; }
     input:checked + .slider:before { transform: translateX(26px); background-color: cyan; box-shadow: 0 0 10px cyan; }
     .slider.round { border-radius: 24px; } .slider.round:before { border-radius: 50%; }
-    
     .btn-action { background: #333; color: #fff; border: 1px solid #666; padding: 5px 10px; cursor: pointer; width: 100%; }
     .btn-action:hover { background: #444; border-color: #fff; }
 </style>
