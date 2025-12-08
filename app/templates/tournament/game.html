@@ -3,63 +3,59 @@
 {% block content %}
 <div class="dashboard-wrapper">
     <div class="board-column">
-        <div class="board-frame">
-            <div id="quantum-board" class="board-grid"></div>
-        </div>
+        <div class="board-frame"><div id="quantum-board" class="board-grid"></div></div>
     </div>
 
     <div class="hud-column">
         <div class="panel turn-panel">
             <div class="panel-header">>> CHRONOMETER</div>
             <div class="timer-row">
-                <div class="timer-box" id="timer-white" style="border-color: #0ff;">
-                    <div class="label">WHITE</div><div class="digits" id="digits-white">10:00</div>
-                </div>
-                <div class="timer-box" id="timer-black" style="border-color: #f70;">
-                    <div class="label">BLACK</div><div class="digits" id="digits-black">10:00</div>
-                </div>
+                <div class="timer-box" id="timer-white" style="border-color: #0ff;"><div class="label">WHITE</div><div class="digits" id="digits-white">10:00</div></div>
+                <div class="timer-box" id="timer-black" style="border-color: #f70;"><div class="label">BLACK</div><div class="digits" id="digits-black">10:00</div></div>
             </div>
-            <div id="turn-display" class="turn-status">INITIALIZING...</div>
-            <div id="ai-loader" class="blink" style="display: none; color: #0f0; text-align: center;">AI COMPUTING...</div>
+            <div id="turn-display" class="turn-status">...</div>
+            <div id="ai-loader" class="blink" style="display: none; color: #0f0; text-align:center;">AI COMPUTING...</div>
         </div>
 
         <div class="panel info-panel">
             <div class="info-row"><span>YOU:</span> <strong style="color:white">{{ user_color|upper }}</strong></div>
             <div class="info-row" style="margin-top:5px; border-top:1px dashed #444; padding-top:5px;">
-                <span>MODE:</span> <span style="color:cyan">{{ difficulty_name|default('SUPERPOSITION')|upper }}</span>
+                <span>DIFFICULTY:</span> <span style="color:cyan">{{ match.ai_difficulty|default('NORMAL')|upper }}</span>
             </div>
         </div>
 
         <div class="panel control-panel">
-            <div class="panel-header">>> INTERFACE</div>
             <div class="mode-switch-container">
-                <span id="mode-text" style="color: #888; font-size: 0.8rem;">STANDARD (Swipe/Drag)</span>
-                <label class="switch">
-                    <input type="checkbox" id="quantum-toggle" onclick="toggleMode()">
-                    <span class="slider round"></span>
-                </label>
+                <span id="mode-text" style="color: #888;">STANDARD (Swipe)</span>
+                <label class="switch"><input type="checkbox" id="quantum-toggle" onclick="toggleMode()"><span class="slider round"></span></label>
             </div>
             <button onclick="clearSelection()" class="btn-action" style="margin-top:10px;">RESET SELECTION</button>
         </div>
         
-        <div class="panel logs-panel" id="logs"><div class="log-entry">> Uplink Established.</div></div>
+        <div class="panel logs-panel" id="logs"><div class="log-entry">> Connected.</div></div>
+        
+        <div id="radar-popup" style="display:none; position:absolute; z-index:100; background:rgba(0,0,0,0.9); border:1px solid cyan; padding:10px; border-radius:5px;">
+            <div style="color:cyan; font-size:0.7rem; margin-bottom:5px;">PHASE RADAR</div>
+            <div style="width:60px; height:60px; border-radius:50%; border:1px solid #555; position:relative;">
+                <div id="radar-needle" style="width:50%; height:2px; background:cyan; position:absolute; top:50%; left:50%; transform-origin:left;"></div>
+            </div>
+            <div id="radar-text" style="color:#fff; font-size:0.7rem; text-align:center; margin-top:5px;">0°</div>
+        </div>
     </div>
 </div>
 
 <div id="game-data" data-match-id="{{ match.id }}" data-board='{{ board_data|safe }}' data-user-color="{{ user_color }}" data-turn="{{ current_turn }}" data-p1="{{ p1_time }}" data-p2="{{ p2_time }}"></div>
 
 <script>
-// ASSETS
 const SVGS = {
-    'P': '<svg viewBox="0 0 100 100"><path d="M50 10 L85 85 L15 85 Z" fill="currentColor"/><circle cx="50" cy="35" r="8" fill="#000"/></svg>',
-    'R': '<svg viewBox="0 0 100 100"><rect x="25" y="25" width="50" height="60" fill="currentColor"/><path d="M25 25 L35 10 L65 10 L75 25" fill="currentColor"/><rect x="35" y="40" width="30" height="30" fill="#000"/></svg>',
-    'N': '<svg viewBox="0 0 100 100"><path d="M20 90 L80 90 L65 30 L75 20 L50 10 L25 30 L40 50 Z" fill="currentColor"/><path d="M35 40 L60 25" stroke="#000" stroke-width="3"/></svg>',
-    'B': '<svg viewBox="0 0 100 100"><path d="M50 5 L80 50 L50 95 L20 50 Z" fill="currentColor"/><circle cx="50" cy="50" r="10" stroke="#000" stroke-width="3" fill="none"/></svg>',
-    'Q': '<svg viewBox="0 0 100 100"><path d="M20 80 L30 30 L50 10 L70 30 L80 80 Z" fill="currentColor"/><path d="M30 30 L50 50 L70 30" fill="none" stroke="#000" stroke-width="2"/></svg>',
-    'K': '<svg viewBox="0 0 100 100"><rect x="35" y="10" width="30" height="80" fill="currentColor"/><path d="M35 10 L20 30 L35 50" fill="currentColor"/><path d="M65 10 L80 30 L65 50" fill="currentColor"/></svg>'
+    'P': '<svg viewBox="0 0 100 100"><path d="M50 15 L80 85 L20 85 Z" fill="currentColor"/><rect x="42" y="30" width="16" height="30" fill="#000"/><circle cx="50" cy="45" r="4" fill="currentColor"/></svg>',
+    'R': '<svg viewBox="0 0 100 100"><path d="M20 20 L40 20 L40 35 L60 35 L60 20 L80 20 L80 85 L20 85 Z" fill="currentColor"/><rect x="30" y="50" width="40" height="5" fill="#000"/></svg>',
+    'N': '<svg viewBox="0 0 100 100"><path d="M25 85 L75 85 L65 35 L75 25 L55 15 L25 35 L35 55 Z" fill="currentColor"/><circle cx="45" cy="35" r="5" fill="#000"/></svg>',
+    'B': '<svg viewBox="0 0 100 100"><path d="M50 10 L80 50 L50 90 L20 50 Z" fill="currentColor"/><rect x="45" y="25" width="10" height="50" fill="#000"/></svg>',
+    'Q': '<svg viewBox="0 0 100 100"><path d="M15 85 L25 35 L40 55 L50 15 L60 55 L75 35 L85 85 Z" fill="currentColor"/><circle cx="50" cy="85" r="5" fill="#000"/></svg>',
+    'K': '<svg viewBox="0 0 100 100"><rect x="35" y="15" width="30" height="70" fill="currentColor"/><path d="M35 15 L50 0 L65 15 Z" fill="currentColor"/><rect x="25" y="75" width="50" height="10" fill="currentColor"/></svg>'
 };
 const PIECE_MAP = { ...SVGS, 'p':SVGS.P, 'r':SVGS.R, 'n':SVGS.N, 'b':SVGS.B, 'q':SVGS.Q, 'k':SVGS.K };
-
 const COLS = ['a','b','c','d','e','f','g','h'];
 const ROWS = ['8','7','6','5','4','3','2','1'];
 const gameData = document.getElementById('game-data');
@@ -91,24 +87,35 @@ function renderBoard() {
             sq.ondragover = (e) => e.preventDefault();
             sq.ondrop = (e) => handleDrop(e, id);
             sq.onclick = () => handleClick(id);
+            // Right Click for Radar
+            sq.oncontextmenu = (e) => {
+                if(boardData[id]) {
+                    e.preventDefault();
+                    showRadar(e.pageX, e.pageY, boardData[id].phase);
+                }
+            };
 
             if (boardData[id]) {
                 const data = boardData[id];
                 const p = data.type || data;
                 const colorClass = (p === p.toUpperCase()) ? 'piece-white' : 'piece-black';
-                
                 const pieceWrap = document.createElement('div');
                 pieceWrap.className = `piece-wrapper ${colorClass}`;
                 pieceWrap.innerHTML = PIECE_MAP[p];
                 
                 if(data.prob && data.prob < 0.99) pieceWrap.classList.add('quantum-ghost');
+                
+                // Entanglement Ring
+                if(data.entangle_color) {
+                    const ring = document.createElement('div');
+                    ring.className = 'entangle-ring';
+                    ring.style.borderColor = data.entangle_color;
+                    sq.appendChild(ring);
+                }
 
                 if (!isQuantumMode && currentTurn === userColor) {
                     pieceWrap.draggable = true;
-                    pieceWrap.ondragstart = (e) => {
-                        draggedId = id;
-                        e.dataTransfer.effectAllowed = 'move';
-                    };
+                    pieceWrap.ondragstart = (e) => { draggedId = id; e.dataTransfer.effectAllowed = 'move'; };
                 }
                 sq.appendChild(pieceWrap);
             }
@@ -116,9 +123,18 @@ function renderBoard() {
         });
     });
     
-    const turnEl = document.getElementById('turn-display');
-    turnEl.innerText = (currentTurn === 'white') ? "■ WHITE TO MOVE" : "■ BLACK TO MOVE";
-    turnEl.style.color = (currentTurn === 'white') ? "#0ff" : "#f70";
+    document.getElementById('turn-display').innerText = (currentTurn === 'white') ? "■ WHITE TO MOVE" : "■ BLACK TO MOVE";
+    document.getElementById('turn-display').style.color = (currentTurn === 'white') ? "#0ff" : "#f70";
+}
+
+function showRadar(x, y, phase) {
+    const popup = document.getElementById('radar-popup');
+    popup.style.display = 'block';
+    popup.style.left = x + 'px';
+    popup.style.top = y + 'px';
+    document.getElementById('radar-needle').style.transform = `rotate(${-phase}deg)`; // Negative for standard math angle
+    document.getElementById('radar-text').innerText = phase + "°";
+    setTimeout(() => { document.addEventListener('click', () => { popup.style.display = 'none'; }, {once:true}); }, 100);
 }
 
 function handleDrop(e, targetId) {
@@ -130,18 +146,13 @@ function handleDrop(e, targetId) {
 
 function handleClick(id) {
     if (currentTurn !== userColor) return;
+    if (selectedSquares.includes(id)) { clearSelection(); return; }
     
-    if (selectedSquares.includes(id)) {
-        clearSelection();
-        return;
-    }
-
     const limit = isQuantumMode ? 3 : 2;
     if (selectedSquares.length < limit) {
         selectedSquares.push(id);
         const el = document.getElementById(id);
-        if(selectedSquares.length===1) el.classList.add('sq-sel-src');
-        else el.classList.add('sq-sel-tgt');
+        if(selectedSquares.length===1) el.classList.add('sq-sel-src'); else el.classList.add('sq-sel-tgt');
     }
 
     if (!isQuantumMode && selectedSquares.length === 2) {
@@ -164,16 +175,8 @@ function clearSelection() {
 function toggleMode() {
     isQuantumMode = !isQuantumMode;
     const txt = document.getElementById('mode-text');
-    const instr = document.getElementById('instruction-text');
-    if (isQuantumMode) {
-        txt.innerText = "QUANTUM (3 Clicks)";
-        txt.style.color = "cyan";
-        instr.innerHTML = "<strong>QUANTUM:</strong><br>Split: [Src] [Tgt1] [Tgt2]<br>Merge: [Src1] [Src2] [Tgt]";
-    } else {
-        txt.innerText = "STANDARD (Swipe)";
-        txt.style.color = "#888";
-        instr.innerText = "Drag pieces to move.";
-    }
+    if (isQuantumMode) { txt.innerText = "QUANTUM (3 Clicks)"; txt.style.color = "cyan"; } 
+    else { txt.innerText = "STANDARD (Swipe)"; txt.style.color = "#888"; }
     clearSelection();
     renderBoard();
 }
@@ -200,19 +203,14 @@ async function sendMove(moveStr) {
             boardData = data.board_data;
             p1Time = parseFloat(data.p1_time) || p1Time;
             p2Time = parseFloat(data.p2_time) || p2Time;
-            
             currentTurn = (currentTurn === 'white') ? 'black' : 'white';
             renderBoard();
-            
             if(data.ai_moved) log("AI Executed Counter-Move.", "#f70");
             if(data.game_over) alert("GAME OVER: " + data.winner.toUpperCase() + " WINS!");
         } else {
             log("Error: " + data.message, "#f44");
         }
-    } catch(e) { 
-        document.getElementById('quantum-board').style.opacity = "1.0";
-        log("Connection Error", "#f44"); 
-    }
+    } catch(e) { document.getElementById('quantum-board').style.opacity = "1.0"; log("Connection Error", "#f44"); }
 }
 
 function log(msg, color="#aaa") {
@@ -269,10 +267,12 @@ startTimer();
         animation: ghostPulse 1.5s infinite alternate;
         mix-blend-mode: screen;
     }
-    @keyframes ghostPulse {
-        0% { transform: scale(0.9); opacity: 0.4; box-shadow: 0 0 5px currentColor; }
-        100% { transform: scale(1.0); opacity: 0.8; box-shadow: 0 0 15px currentColor; }
+    .entangle-ring {
+        position: absolute; width: 90%; height: 90%; border-radius: 50%;
+        border: 3px dashed; animation: spin 10s linear infinite; pointer-events: none;
     }
+    @keyframes ghostPulse { 0% { opacity: 0.4; } 100% { opacity: 0.8; box-shadow: 0 0 15px currentColor; } }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
 
     /* HUD */
     .panel { background: rgba(0, 15, 0, 0.9); border: 1px solid var(--primary-dim); padding: 15px; margin-bottom: 15px; }
@@ -284,9 +284,8 @@ startTimer();
     .turn-status { text-align: center; margin-top: 10px; font-weight: bold; letter-spacing: 1px; font-size: 1.1rem; }
     .logs-panel { height: 150px; overflow-y: auto; background: #000; font-family: monospace; font-size: 0.8rem; color: var(--primary); }
     .instruction-box { background: rgba(255,255,255,0.05); padding: 10px; font-size: 0.8rem; color: #ccc; margin-top: 10px; border-left: 3px solid var(--primary); }
-    .mode-switch-container { display: flex; align-items: center; justify-content: space-between; }
     
-    /* TOGGLE */
+    .mode-switch-container { display: flex; align-items: center; justify-content: space-between; }
     .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border: 1px solid #555; }
