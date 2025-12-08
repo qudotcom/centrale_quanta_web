@@ -23,21 +23,15 @@
                 </div>
             </div>
             <div id="turn-display" class="turn-status">INITIALIZING...</div>
+            <div id="ai-loader" class="blink" style="display: none; color: #0f0; text-align: center; margin-top:5px;">AI CALCULATING...</div>
         </div>
 
         <div class="panel info-panel">
-            <div class="info-row">
-                <span>WHITE:</span> {{ match.player1.username }}
-            </div>
-            <div class="info-row">
-                <span>BLACK:</span> {{ match.player2.username }}
-            </div>
-            <div class="info-row">
-                <span>YOU:</span> <strong style="color:white">{{ user_color|upper }}</strong>
-            </div>
-            <div class="info-row" style="margin-top:10px; border-top:1px dashed #444; padding-top:5px;">
-                <span>AI LEVEL:</span> 
-                <strong style="color:cyan">{{ match.ai_difficulty|upper }}</strong>
+            <div class="info-row"><span>WHITE:</span> {{ match.player1.username }}</div>
+            <div class="info-row"><span>BLACK:</span> {{ match.player2.username }}</div>
+            <div class="info-row"><span>YOU:</span> <strong style="color:white">{{ user_color|upper }}</strong></div>
+            <div class="info-row" style="margin-top:5px; border-top:1px dashed #444; padding-top:5px;">
+                <span>DIFFICULTY:</span> <span style="color:cyan">{{ match.ai_difficulty|default('NORMAL')|upper }}</span>
             </div>
         </div>
 
@@ -63,7 +57,6 @@
 
         <div class="panel logs-panel" id="logs">
             <div class="log-entry">> Uplink Established.</div>
-            <div class="log-entry" style="color:cyan">> Visual System: High-Detail Cybernetics Loaded.</div>
         </div>
 
     </div>
@@ -79,47 +72,44 @@
 </div>
 
 <script>
-// --- 1. ASSETS: CYBERPUNK CHESS PIECES (SVG) ---
+// --- ASSETS ---
 const SVGS = {
-    // Pawn: Data Spike with energy core
-    'P': `<svg viewBox="0 0 100 100"><defs><filter id="glow-p"><feGaussianBlur stdDeviation="2" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M50 10 L85 85 L15 85 Z" fill="currentColor" filter="url(#glow-p)"/><rect x="42" y="30" width="16" height="30" fill="#000"/><circle cx="50" cy="45" r="4" fill="currentColor"/></svg>`,
-    // Rook: Heavy Siege Tower
-    'R': `<svg viewBox="0 0 100 100"><path d="M20 20 H40 V35 H60 V20 H80 V90 H20 Z" fill="currentColor"/><rect x="25" y="45" width="50" height="5" fill="#000"/><rect x="25" y="65" width="50" height="5" fill="#000"/><path d="M30 20 L30 5 M50 20 L50 5 M70 20 L70 5" stroke="currentColor" stroke-width="4"/></svg>`,
-    // Knight: Geometric Armored Unit
-    'N': `<svg viewBox="0 0 100 100"><path d="M20 90 L80 90 L70 40 L85 25 L60 10 L20 35 L35 55 Z" fill="currentColor"/><path d="M35 35 L60 20 L70 35" fill="none" stroke="#000" stroke-width="3"/><circle cx="45" cy="35" r="3" fill="#000"/></svg>`,
-    // Bishop: Energy Obelisk
-    'B': `<svg viewBox="0 0 100 100"><path d="M50 5 L85 45 L50 95 L15 45 Z" fill="currentColor"/><path d="M50 20 L50 80" stroke="#000" stroke-width="4"/><circle cx="50" cy="30" r="8" fill="#000" stroke="currentColor" stroke-width="2"/></svg>`,
-    // Queen: The Omni-Crown
-    'Q': `<svg viewBox="0 0 100 100"><path d="M10 90 L20 40 L35 65 L50 10 L65 65 L80 40 L90 90 Z" fill="currentColor"/><circle cx="50" cy="90" r="6" fill="#000"/><path d="M20 40 L50 25 L80 40" fill="none" stroke="#000" stroke-width="2"/></svg>`,
-    // King: The Citadel Monolith
-    'K': `<svg viewBox="0 0 100 100"><rect x="30" y="25" width="40" height="70" fill="currentColor"/><path d="M30 25 L50 5 L70 25" fill="currentColor"/><rect x="35" y="35" width="30" height="10" fill="#000"/><rect x="45" y="55" width="10" height="30" fill="#000"/></svg>`
+    'P': '<svg viewBox="0 0 100 100"><path d="M50 15 L80 85 L20 85 Z" fill="currentColor"/><rect x="42" y="30" width="16" height="30" fill="#000"/><circle cx="50" cy="45" r="4" fill="currentColor"/></svg>',
+    'R': '<svg viewBox="0 0 100 100"><path d="M20 20 L40 20 L40 35 L60 35 L60 20 L80 20 L80 85 L20 85 Z" fill="currentColor"/><rect x="30" y="50" width="40" height="5" fill="#000"/></svg>',
+    'N': '<svg viewBox="0 0 100 100"><path d="M25 85 L75 85 L65 35 L75 25 L55 15 L25 35 L35 55 Z" fill="currentColor"/><circle cx="45" cy="35" r="5" fill="#000"/></svg>',
+    'B': '<svg viewBox="0 0 100 100"><path d="M50 10 L80 50 L50 90 L20 50 Z" fill="currentColor"/><rect x="45" y="25" width="10" height="50" fill="#000"/></svg>',
+    'Q': '<svg viewBox="0 0 100 100"><path d="M15 85 L25 35 L40 55 L50 15 L60 55 L75 35 L85 85 Z" fill="currentColor"/><circle cx="50" cy="85" r="5" fill="#000"/></svg>',
+    'K': '<svg viewBox="0 0 100 100"><rect x="35" y="15" width="30" height="70" fill="currentColor"/><path d="M35 15 L50 0 L65 15 Z" fill="currentColor"/><rect x="25" y="75" width="50" height="10" fill="currentColor"/></svg>'
 };
-// Map lowercase letters to the same SVG geometry
 const PIECE_MAP = { ...SVGS, 'p':SVGS.P, 'r':SVGS.R, 'n':SVGS.N, 'b':SVGS.B, 'q':SVGS.Q, 'k':SVGS.K };
 
-// --- 2. CONFIGURATION & STATE ---
+// --- STATE ---
 const COLS = ['a','b','c','d','e','f','g','h'];
 const ROWS = ['8','7','6','5','4','3','2','1'];
 const gameData = document.getElementById('game-data');
 const matchId = gameData.dataset.matchId;
 const userColor = gameData.dataset.userColor;
 
-// Dynamic State Variables
 let currentTurn = gameData.dataset.turn;
 let boardData = JSON.parse(gameData.dataset.board);
+
+// SAFETY: Parse Float or default to 600 (10 mins)
 let p1Time = parseFloat(gameData.dataset.p1);
+if (isNaN(p1Time)) p1Time = 600.0;
+
 let p2Time = parseFloat(gameData.dataset.p2);
+if (isNaN(p2Time)) p2Time = 600.0;
+
 let selectedSquares = [];
 let isQuantumMode = false;
 let draggedId = null;
 let timerInterval = null;
 
-// --- 3. RENDER LOGIC ---
+// --- RENDER ---
 function renderBoard() {
     const boardEl = document.getElementById('quantum-board');
     boardEl.innerHTML = ''; 
     
-    // Flip board if player is Black
     let rRows = (userColor === 'black') ? [...ROWS].reverse() : ROWS;
     let rCols = (userColor === 'black') ? [...COLS].reverse() : COLS;
 
@@ -131,12 +121,10 @@ function renderBoard() {
             sq.id = id;
             sq.classList.add((COLS.indexOf(col)+parseInt(row))%2===0 ? 'sq-dark':'sq-light');
 
-            // --- EVENT LISTENERS ---
-            sq.ondragover = (e) => e.preventDefault(); // Allow drop
-            sq.ondrop = (e) => handleDrop(e, id);      // Handle drop
-            sq.onclick = () => handleClick(id);        // Handle click
+            sq.ondragover = (e) => e.preventDefault();
+            sq.ondrop = (e) => handleDrop(e, id);
+            sq.onclick = () => handleClick(id);
 
-            // --- PIECE RENDERING ---
             if (boardData[id]) {
                 const data = boardData[id];
                 const p = data.type || data;
@@ -146,19 +134,16 @@ function renderBoard() {
                 pieceWrap.className = `piece-wrapper ${colorClass}`;
                 pieceWrap.innerHTML = PIECE_MAP[p];
                 
-                // QUANTUM GHOST EFFECT (Probability < 100%)
+                // Quantum Ghost Visuals
                 if(data.prob && data.prob < 0.99) {
                     pieceWrap.classList.add('quantum-ghost');
                 }
 
-                // MAKE DRAGGABLE (If it's my turn and standard mode)
                 if (!isQuantumMode && currentTurn === userColor) {
                     pieceWrap.draggable = true;
                     pieceWrap.ondragstart = (e) => {
                         draggedId = id;
                         e.dataTransfer.effectAllowed = 'move';
-                        // Optional: Hide default ghost image
-                        // e.dataTransfer.setDragImage(new Image(), 0, 0); 
                     };
                 }
                 sq.appendChild(pieceWrap);
@@ -167,7 +152,7 @@ function renderBoard() {
         });
     });
     
-    // UPDATE HUD INDICATOR
+    // HUD Update
     const turnEl = document.getElementById('turn-display');
     if (currentTurn === 'white') {
         turnEl.innerText = "■ WHITE TO MOVE";
@@ -178,57 +163,38 @@ function renderBoard() {
     }
 }
 
-// --- 4. INTERACTION: DRAG & DROP (Standard) ---
+// --- CONTROLS ---
 function handleDrop(e, targetId) {
     if (isQuantumMode || !draggedId || draggedId === targetId) return;
     e.preventDefault();
-    const moveStr = draggedId + targetId;
-    sendMove(moveStr);
+    sendMove(draggedId + targetId);
     draggedId = null;
 }
 
-// --- 5. INTERACTION: CLICK (Quantum) ---
 function handleClick(id) {
     if (currentTurn !== userColor) return;
     
-    // Deselect if clicking already selected square
     if (selectedSquares.includes(id)) {
         clearSelection();
         return;
     }
 
-    // Determine how many clicks allowed (2 for Standard, 3 for Quantum)
     const limit = isQuantumMode ? 3 : 2;
     if (selectedSquares.length < limit) {
         selectedSquares.push(id);
-        
-        // Add visual highlighting
         const el = document.getElementById(id);
         if(selectedSquares.length===1) el.classList.add('sq-sel-src');
         else el.classList.add('sq-sel-tgt');
     }
 
-    // Auto-Submit Logic
     if (!isQuantumMode && selectedSquares.length === 2) {
-        // Standard: Move Source -> Target
         sendMove(selectedSquares.join(''));
     } else if (isQuantumMode && selectedSquares.length === 3) {
-        // Quantum: Source -> Target1 -> Target2
         const s1 = selectedSquares[0];
         const s2 = selectedSquares[1];
         const t = selectedSquares[2];
-        
-        // HEURISTIC: MERGE vs SPLIT
-        // If 2nd click is an existing piece, assume Merge (Src1 + Src2 -> Tgt)
-        // If 2nd click is empty, assume Split (Src -> Tgt1 + Tgt2)
         const isS2Occupied = boardData[s2] !== undefined;
-        let moveStr = "";
-        
-        if (isS2Occupied) {
-            moveStr = `${s1}${t}^${s2}${t}`; // Merge Syntax
-        } else {
-            moveStr = `${s1}${s2}^${s1}${t}`; // Split Syntax
-        }
+        let moveStr = isS2Occupied ? `${s1}${t}^${s2}${t}` : `${s1}${s2}^${s1}${t}`;
         sendMove(moveStr);
     }
 }
@@ -242,7 +208,6 @@ function toggleMode() {
     isQuantumMode = !isQuantumMode;
     const txt = document.getElementById('mode-text');
     const instr = document.getElementById('instruction-text');
-    
     if (isQuantumMode) {
         txt.innerText = "QUANTUM (3 Clicks)";
         txt.style.color = "cyan";
@@ -253,16 +218,14 @@ function toggleMode() {
         instr.innerText = "Drag pieces to move.";
     }
     clearSelection();
-    renderBoard(); // Re-render to enable/disable draggable
+    renderBoard();
 }
 
-// --- 6. NETWORK ---
 async function sendMove(moveStr) {
     clearSelection();
     log(`Sending: ${moveStr}...`);
-    
-    // Visual Loading Indicator
     document.getElementById('quantum-board').style.opacity = "0.7";
+    document.getElementById('ai-loader').style.display = "block"; // Show AI thinking
     
     try {
         const res = await fetch(`/tournament/move/${matchId}`, {
@@ -272,26 +235,24 @@ async function sendMove(moveStr) {
         });
         const data = await res.json();
         
-        document.getElementById('quantum-board').style.opacity = "1.0"; // Restore opacity
+        document.getElementById('quantum-board').style.opacity = "1.0";
+        document.getElementById('ai-loader').style.display = "none";
         
         if (data.success) {
             log("Move Accepted.", "#0f0");
-            
-            // Update Local State
             boardData = data.board_data;
-            p1Time = data.p1_time; 
-            p2Time = data.p2_time;
+            // Update Clocks
+            p1Time = parseFloat(data.p1_time) || p1Time;
+            p2Time = parseFloat(data.p2_time) || p2Time;
             
-            // Toggle Turn
             currentTurn = (currentTurn === 'white') ? 'black' : 'white';
-            
             renderBoard();
             
-            if(data.game_over) alert("GAME OVER: " + data.winner);
-            
-            // Log if AI moved instantly
-            if(data.ai_moved) log("AI Executed Counter-Move.", "#f70");
-            
+            if(data.ai_moved) log("AI Response Received.", "#f70");
+            if(data.game_over) {
+                alert("GAME OVER: " + data.winner.toUpperCase() + " WINS!");
+                clearInterval(timerInterval);
+            }
         } else {
             log("Error: " + data.message, "#f44");
         }
@@ -301,15 +262,16 @@ async function sendMove(moveStr) {
     }
 }
 
-// --- 7. UTILITIES ---
 function log(msg, color="#aaa") {
     const b = document.getElementById('logs');
     b.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
     b.scrollTop = b.scrollHeight;
 }
 
+// FIX: NAN Preventer
 function formatTime(s) {
-    if(s<0) s=0;
+    if (isNaN(s) || s === null) return "10:00";
+    if (s < 0) s = 0;
     const m = Math.floor(s/60).toString().padStart(2,'0');
     const sec = Math.floor(s%60).toString().padStart(2,'0');
     return `${m}:${sec}`;
@@ -318,74 +280,49 @@ function formatTime(s) {
 function startTimer() {
     if(timerInterval) clearInterval(timerInterval);
     timerInterval = setInterval(()=>{
-        // Only tick if game isn't over
-        if (currentTurn === 'white' && p1Time > 0) p1Time--;
-        if (currentTurn === 'black' && p2Time > 0) p2Time--;
+        // Only count down active player
+        if (currentTurn === 'white' && p1Time > 0) p1Time -= 1;
+        if (currentTurn === 'black' && p2Time > 0) p2Time -= 1;
         
         document.getElementById('digits-white').innerText = formatTime(p1Time);
         document.getElementById('digits-black').innerText = formatTime(p2Time);
         
-        // Highlight active timer
         document.getElementById('timer-white').style.boxShadow = (currentTurn==='white')?"0 0 15px cyan":"none";
         document.getElementById('timer-black').style.boxShadow = (currentTurn==='black')?"0 0 15px #f70":"none";
         
         if (p1Time <= 0 || p2Time <= 0) {
             clearInterval(timerInterval);
-            alert("TIME OUT - GAME OVER");
+            alert("TIME OUT");
         }
     }, 1000);
 }
 
-// --- STARTUP ---
+// Boot
 renderBoard();
 startTimer();
 </script>
 
 <style>
-    /* --- CSS GRID LAYOUT --- */
+    /* LAYOUT */
     .dashboard-wrapper { display: grid; grid-template-columns: 500px 1fr; gap: 30px; max-width: 1000px; margin: 40px auto; padding: 0 20px; }
     
-    /* --- BOARD CONTAINER --- */
-    .board-frame { 
-        border: 4px solid var(--primary-dim); 
-        padding: 5px; 
-        background: #000; 
-        box-shadow: 0 0 30px rgba(0,255,65,0.1); 
-    }
-    .board-grid { 
-        display: grid; 
-        grid-template-columns: repeat(8, 1fr); 
-        width: 480px; 
-        height: 480px; 
-    }
+    /* BOARD */
+    .board-frame { border: 4px solid var(--primary-dim); padding: 5px; background: #000; box-shadow: 0 0 30px rgba(0,255,65,0.1); }
+    .board-grid { display: grid; grid-template-columns: repeat(8, 1fr); width: 480px; height: 480px; }
+    .square { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
+    .sq-light { background: #111; } .sq-dark { background: #000; }
     
-    /* --- SQUARES --- */
-    .square { 
-        width: 100%; height: 100%; 
-        display: flex; align-items: center; justify-content: center; 
-        position: relative; 
-    }
-    .sq-light { background: #111; }
-    .sq-dark { background: #000; }
-    
-    /* Selection Highlights */
+    /* SELECTION */
     .sq-sel-src { background: rgba(0, 255, 255, 0.25) !important; box-shadow: inset 0 0 15px cyan; }
     .sq-sel-tgt { background: rgba(0, 255, 0, 0.25) !important; box-shadow: inset 0 0 15px lime; }
 
-    /* --- PIECES --- */
-    .piece-wrapper { 
-        width: 85%; height: 85%; 
-        transition: transform 0.1s; 
-        cursor: grab; 
-        position: relative; 
-    }
+    /* PIECES */
+    .piece-wrapper { width: 85%; height: 85%; transition: transform 0.1s; cursor: grab; position: relative; }
     .piece-wrapper:active { transform: scale(1.1); cursor: grabbing; }
-    
-    /* Colors */
     .piece-white { color: cyan; filter: drop-shadow(0 0 5px cyan); }
     .piece-black { color: #ff4400; filter: drop-shadow(0 0 5px #ff4400); }
     
-    /* QUANTUM GHOST EFFECT */
+    /* QUANTUM GHOST */
     .quantum-ghost {
         opacity: 0.6;
         border: 2px dotted rgba(255,255,255,0.5);
@@ -398,60 +335,19 @@ startTimer();
         100% { transform: scale(1.0); opacity: 0.8; box-shadow: 0 0 15px currentColor; }
     }
 
-    /* --- HUD PANELS --- */
-    .panel { 
-        background: rgba(0, 15, 0, 0.9); 
-        border: 1px solid var(--primary-dim); 
-        padding: 15px; 
-        margin-bottom: 15px; 
-    }
-    .panel-header { 
-        border-bottom: 1px solid var(--primary-dim); 
-        margin-bottom: 10px; 
-        font-size: 0.8rem; 
-        color: var(--primary); 
-        letter-spacing: 2px; 
-    }
+    /* PANELS */
+    .panel { background: rgba(0, 15, 0, 0.9); border: 1px solid var(--primary-dim); padding: 15px; margin-bottom: 15px; }
+    .panel-header { border-bottom: 1px solid var(--primary-dim); margin-bottom: 10px; font-size: 0.8rem; color: var(--primary); letter-spacing: 2px; }
     
-    /* Timer */
     .timer-row { display: flex; justify-content: space-between; gap: 10px; }
-    .timer-box { 
-        border: 2px solid; 
-        padding: 10px; 
-        text-align: center; 
-        border-radius: 5px; 
-        width: 48%; 
-        transition: box-shadow 0.3s; 
-    }
+    .timer-box { border: 2px solid; padding: 10px; text-align: center; border-radius: 5px; width: 48%; transition: box-shadow 0.3s; }
     .digits { font-size: 1.8rem; font-family: monospace; color: #fff; font-weight: bold; }
     .label { font-size: 0.7rem; color: #aaa; }
-    .turn-status { 
-        text-align: center; 
-        margin-top: 10px; 
-        font-weight: bold; 
-        letter-spacing: 1px; 
-        font-size: 1.1rem; 
-    }
+    .turn-status { text-align: center; margin-top: 10px; font-weight: bold; letter-spacing: 1px; font-size: 1.1rem; }
 
-    /* Logs & Info */
-    .logs-panel { 
-        height: 150px; 
-        overflow-y: auto; 
-        background: #000; 
-        font-family: monospace; 
-        font-size: 0.8rem; 
-        color: var(--primary); 
-    }
-    .instruction-box { 
-        background: rgba(255,255,255,0.05); 
-        padding: 10px; 
-        font-size: 0.8rem; 
-        color: #ccc; 
-        margin-top: 10px; 
-        border-left: 3px solid var(--primary); 
-    }
-
-    /* Toggle Switch */
+    .logs-panel { height: 150px; overflow-y: auto; background: #000; font-family: monospace; font-size: 0.8rem; color: var(--primary); }
+    
+    /* SWITCH */
     .mode-switch-container { display: flex; align-items: center; justify-content: space-between; }
     .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
     .switch input { opacity: 0; width: 0; height: 0; }
@@ -461,14 +357,8 @@ startTimer();
     input:checked + .slider:before { transform: translateX(26px); background-color: cyan; box-shadow: 0 0 10px cyan; }
     .slider.round { border-radius: 24px; } .slider.round:before { border-radius: 50%; }
     
-    .btn-action { 
-        background: #333; 
-        color: #fff; 
-        border: 1px solid #666; 
-        padding: 5px 10px; 
-        cursor: pointer; 
-        width: 100%; 
-    }
+    .btn-action { background: #333; color: #fff; border: 1px solid #666; padding: 5px 10px; cursor: pointer; width: 100%; }
     .btn-action:hover { background: #444; border-color: #fff; }
+    .blink { animation: blink 1s infinite; } @keyframes blink { 50% { opacity: 0; } }
 </style>
 {% endblock %}
