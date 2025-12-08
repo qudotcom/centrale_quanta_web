@@ -2,60 +2,34 @@
 
 {% block content %}
 <div style="text-align: center; margin-top: 10vh;">
-    <h1 style="text-shadow: 0 0 10px var(--primary); font-size: 3rem; margin-bottom: 10px;">CENTRALE QUANTA</h1>
+    <h1 style="text-shadow: 0 0 10px var(--primary); font-size: 3rem;">CENTRALE QUANTA</h1>
     <p style="font-size: 1.1rem; color: #ccc; margin-bottom: 3rem;">
         Quantum Mechanics x Competitive Chess
     </p>
 
     <div style="display: flex; flex-direction: column; align-items: center; gap: 30px;">
-        
         <div style="border: 1px solid var(--primary-dim); padding: 20px; width: 400px; background: rgba(0,20,0,0.5);">
             <h3 style="margin-top:0;">MULTIPLAYER</h3>
-            <a href="/tournament/bracket" class="btn" style="display: block; text-decoration: none;">
-                ENTER TOURNAMENT BRACKET
-            </a>
+            <a href="/tournament/bracket" class="btn" style="display: block; text-decoration: none;">ENTER TOURNAMENT</a>
         </div>
 
         <div style="border: 1px solid var(--primary-dim); padding: 20px; width: 400px; background: rgba(0,20,0,0.5);">
             <h3 style="margin-top:0;">SIMULATION</h3>
-            
             <form action="/tournament/practice" method="post">
                 <div style="margin-bottom: 15px; text-align: left;">
-                    <label style="font-size: 0.8rem; color: #888;">DIFFICULTY LEVEL:</label>
+                    <label style="font-size: 0.8rem; color: #888;">DIFFICULTY:</label>
                     <select name="difficulty" class="cyber-select">
-                        <option value="easy">LEVEL 1: DECOHERENCE (Easy)</option>
-                        <option value="normal" selected>LEVEL 2: SUPERPOSITION (Normal)</option>
-                        <option value="hard">LEVEL 3: ENTANGLEMENT (Hard)</option>
+                        <option value="decoherence">LEVEL 1: DECOHERENCE (Easy)</option>
+                        <option value="superposition" selected>LEVEL 2: SUPERPOSITION (Normal)</option>
+                        <option value="entanglement">LEVEL 3: ENTANGLEMENT (Hard)</option>
                     </select>
                 </div>
-                
-                <button type="submit" class="btn" style="width: 100%; border-color: cyan; color: cyan;">
-                    INITIALIZE vs CPU
-                </button>
+                <button type="submit" class="btn" style="width: 100%; border-color: cyan; color: cyan;">INITIALIZE vs CPU</button>
             </form>
         </div>
-
-    </div>
-
-    <div style="margin-top: 60px; font-size: 0.8rem; color: #666; font-family: monospace;">
-        SYSTEM STATUS: <span style="color: #0f0; animation: blink 1s infinite;">ONLINE</span>
     </div>
 </div>
-
 <style>
-    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
-    
-    .cyber-select {
-        width: 100%;
-        background: #000;
-        color: var(--primary);
-        border: 1px solid var(--primary);
-        padding: 10px;
-        font-family: 'Courier New', monospace;
-        font-size: 1rem;
-        margin-top: 5px;
-        cursor: pointer;
-    }
-    .cyber-select:focus { outline: none; box-shadow: 0 0 10px var(--primary); }
+    .cyber-select { width: 100%; background: #000; color: var(--primary); border: 1px solid var(--primary); padding: 10px; font-family: 'Courier New', monospace; font-size: 1rem; cursor: pointer; }
 </style>
 {% endblock %}
