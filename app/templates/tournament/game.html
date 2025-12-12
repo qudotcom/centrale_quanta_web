@@ -11,13 +11,7 @@
     <div class="hud-column">
         
         <div class="panel turn-panel">
-            <div class="panel-header">>> CHRONOMETER</div>
-            
-            <div id="signal-box" style="margin-bottom: 10px; padding: 10px; text-align: center; border: 1px solid #333; background: #000;">
-                <div id="turn-display" class="turn-status">INITIALIZING...</div>
-                <div id="ai-loader" class="blink" style="display: none; color: #0f0; margin-top:5px;">AI THINKING...</div>
-            </div>
-
+            <div class="panel-header">>> ACTIVE SIGNAL</div>
             <div class="timer-row">
                 <div class="timer-box" id="timer-white" style="border-color: #0ff;">
                     <div class="label">WHITE</div><div class="digits" id="digits-white">10:00</div>
@@ -26,6 +20,8 @@
                     <div class="label">BLACK</div><div class="digits" id="digits-black">10:00</div>
                 </div>
             </div>
+            <div id="turn-display" class="turn-status">INITIALIZING...</div>
+            <div id="ai-loader" class="blink" style="display: none; color: #0f0; text-align:center; margin-top:5px;">AI THINKING...</div>
         </div>
 
         <div class="panel info-panel">
@@ -49,13 +45,21 @@
         
         <div class="panel logs-panel" id="logs"><div class="log-entry">> Connected.</div></div>
         
-        <div id="radar-popup" style="display:none; position:absolute; z-index:100; background:rgba(0,0,0,0.9); border:1px solid cyan; padding:10px;">
-            <div style="color:cyan; font-size:0.7rem; margin-bottom:5px;">PHASE RADAR</div>
-            <div style="width:60px; height:60px; border-radius:50%; border:1px solid #555; position:relative;">
-                <div id="radar-needle" style="width:50%; height:2px; background:cyan; position:absolute; top:50%; left:50%; transform-origin:left;"></div>
+        <div id="radar-popup" class="radar-tooltip">
+            <div class="radar-header">QUANTUM STATE</div>
+            <div class="radar-body">
+                <div class="radar-circle">
+                    <div id="radar-wedge" class="radar-wedge"></div>
+                    <div class="radar-axis axis-x"></div>
+                    <div class="radar-axis axis-y"></div>
+                </div>
+                <div class="radar-stats">
+                    <div>PROB: <span id="radar-prob" style="color:#0f0">100%</span></div>
+                    <div>PHASE: <span id="radar-phase" style="color:cyan">0°</span></div>
+                </div>
             </div>
-            <div id="radar-text" style="color:#fff; font-size:0.7rem; text-align:center; margin-top:5px;">0°</div>
         </div>
+
     </div>
 </div>
 
@@ -101,15 +105,18 @@ function renderBoard() {
             sq.id = id;
             sq.classList.add((COLS.indexOf(col)+parseInt(row))%2===0 ? 'sq-dark':'sq-light');
 
+            // EVENTS
             sq.ondragover = (e) => e.preventDefault();
             sq.ondrop = (e) => handleDrop(e, id);
             sq.onclick = () => handleClick(id);
-            sq.oncontextmenu = (e) => {
-                if(boardData[id]) { e.preventDefault(); showRadar(e.pageX, e.pageY, boardData[id].phase); }
-            };
 
+            // MOUSE HOVER FOR RADAR
             if (boardData[id]) {
                 const data = boardData[id];
+                sq.onmouseenter = (e) => showRadar(e, data);
+                sq.onmouseleave = hideRadar;
+                
+                // Render Piece
                 const p = data.type || data;
                 const colorClass = (p === p.toUpperCase()) ? 'piece-white' : 'piece-black';
                 const pieceWrap = document.createElement('div');
@@ -130,35 +137,52 @@ function renderBoard() {
                     pieceWrap.ondragstart = (e) => { draggedId = id; e.dataTransfer.effectAllowed = 'move'; };
                 }
                 sq.appendChild(pieceWrap);
+            } else {
+                sq.onmouseenter = hideRadar; // Ensure hides if moving to empty
             }
             boardEl.appendChild(sq);
         });
     });
     
-    // ROBUST TURN INDICATOR
+    // HUD
     const turnEl = document.getElementById('turn-display');
-    const signalBox = document.getElementById('signal-box');
-    
-    if (currentTurn === 'white') {
-        turnEl.innerText = "■ WHITE TO MOVE";
-        turnEl.style.color = "#0ff";
-        signalBox.style.borderColor = (userColor === 'white') ? "#0ff" : "#333";
-    } else {
-        turnEl.innerText = "■ BLACK TO MOVE";
-        turnEl.style.color = "#f70";
-        signalBox.style.borderColor = (userColor === 'black') ? "#f70" : "#333";
-    }
+    turnEl.innerText = (currentTurn === 'white') ? "■ WHITE TO MOVE" : "■ BLACK TO MOVE";
+    turnEl.style.color = (currentTurn === 'white') ? "#0ff" : "#f70";
 }
 
-function showRadar(x, y, phase) {
+// --- RADAR LOGIC ---
+function showRadar(e, data) {
     const popup = document.getElementById('radar-popup');
+    const wedge = document.getElementById('radar-wedge');
+    const phaseText = document.getElementById('radar-phase');
+    const probText = document.getElementById('radar-prob');
+
+    // 1. Position Tooltip near mouse
+    // We add a small offset so it doesn't block the cursor
+    const x = e.clientX + 15;
+    const y = e.clientY - 50;
+    
+    popup.style.left = x + 'px';
+    popup.style.top = y + 'px';
     popup.style.display = 'block';
-    popup.style.left = x + 'px'; popup.style.top = y + 'px';
-    document.getElementById('radar-needle').style.transform = `rotate(${-phase}deg)`;
-    document.getElementById('radar-text').innerText = phase + "°";
-    setTimeout(() => { document.addEventListener('click', () => { popup.style.display = 'none'; }, {once:true}); }, 100);
+
+    // 2. Update Data
+    // Phase is an angle (degrees). We rotate the wedge.
+    // CSS Conic Gradient handles the "Wedge" look.
+    // We rotate the div to point the wedge in the phase direction.
+    const phase = data.phase || 0;
+    // Wedge covers +/- 15 degrees to look like a radar sector
+    wedge.style.transform = `rotate(${phase - 45}deg)`; 
+    
+    phaseText.innerText = phase + "°";
+    probText.innerText = Math.round((data.prob || 1.0) * 100) + "%";
 }
 
+function hideRadar() {
+    document.getElementById('radar-popup').style.display = 'none';
+}
+
+// --- MOVEMENT LOGIC (Standard) ---
 function handleDrop(e, targetId) {
     if (isQuantumMode || !draggedId || draggedId === targetId) return;
     e.preventDefault();
@@ -225,10 +249,7 @@ async function sendMove(moveStr) {
             boardData = data.board_data;
             p1Time = parseFloat(data.p1_time) || p1Time;
             p2Time = parseFloat(data.p2_time) || p2Time;
-            
-            // FIX: Rely ONLY on Server Truth
             currentTurn = data.current_turn;
-            
             renderBoard();
             if(data.ai_moved) log("AI Executed Counter-Move.", "#f70");
             if(data.game_over) alert("GAME OVER: " + data.winner.toUpperCase() + " WINS!");
@@ -270,7 +291,7 @@ startTimer();
 </script>
 
 <style>
-    /* LAYOUT */
+    /* LAYOUT & BOARD */
     .dashboard-wrapper { display: grid; grid-template-columns: 500px 1fr; gap: 30px; max-width: 1000px; margin: 40px auto; padding: 0 20px; }
     .board-frame { border: 4px solid var(--primary-dim); padding: 5px; background: #000; box-shadow: 0 0 30px rgba(0,255,65,0.1); }
     .board-grid { display: grid; grid-template-columns: repeat(8, 1fr); width: 480px; height: 480px; }
@@ -284,18 +305,9 @@ startTimer();
     .piece-wrapper:active { transform: scale(1.1); cursor: grabbing; }
     .piece-white { color: cyan; filter: drop-shadow(0 0 5px cyan); }
     .piece-black { color: #ff4400; filter: drop-shadow(0 0 5px #ff4400); }
+    .quantum-ghost { opacity: 0.6; border: 2px dotted rgba(255,255,255,0.5); border-radius: 50%; animation: ghostPulse 1.5s infinite alternate; mix-blend-mode: screen; }
+    .entangle-ring { position: absolute; width: 90%; height: 90%; border-radius: 50%; border: 3px dashed; animation: spin 10s linear infinite; pointer-events: none; }
     
-    .quantum-ghost {
-        opacity: 0.6;
-        border: 2px dotted rgba(255,255,255,0.5);
-        border-radius: 50%;
-        animation: ghostPulse 1.5s infinite alternate;
-        mix-blend-mode: screen;
-    }
-    .entangle-ring {
-        position: absolute; width: 90%; height: 90%; border-radius: 50%;
-        border: 3px dashed; animation: spin 10s linear infinite; pointer-events: none;
-    }
     @keyframes ghostPulse { 0% { opacity: 0.4; } 100% { opacity: 0.8; box-shadow: 0 0 15px currentColor; } }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
@@ -306,10 +318,9 @@ startTimer();
     .timer-box { border: 2px solid; padding: 10px; text-align: center; border-radius: 5px; width: 48%; transition: box-shadow 0.3s; }
     .digits { font-size: 1.8rem; font-family: monospace; color: #fff; font-weight: bold; }
     .label { font-size: 0.7rem; color: #aaa; }
-    .turn-status { text-align: center; font-weight: bold; letter-spacing: 1px; font-size: 1.1rem; }
+    .turn-status { text-align: center; margin-top: 10px; font-weight: bold; letter-spacing: 1px; font-size: 1.1rem; }
     .logs-panel { height: 150px; overflow-y: auto; background: #000; font-family: monospace; font-size: 0.8rem; color: var(--primary); }
     .instruction-box { background: rgba(255,255,255,0.05); padding: 10px; font-size: 0.8rem; color: #ccc; margin-top: 10px; border-left: 3px solid var(--primary); }
-    
     .mode-switch-container { display: flex; align-items: center; justify-content: space-between; }
     .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
     .switch input { opacity: 0; width: 0; height: 0; }
@@ -321,5 +332,42 @@ startTimer();
     .btn-action { background: #333; color: #fff; border: 1px solid #666; padding: 5px 10px; cursor: pointer; width: 100%; }
     .btn-action:hover { background: #444; border-color: #fff; }
     .blink { animation: blink 1s infinite; } @keyframes blink { 50% { opacity: 0; } }
+
+    /* RADAR POPUP */
+    .radar-tooltip {
+        display: none;
+        position: fixed; /* Fixed so it doesn't get cut off */
+        z-index: 9999;
+        background: rgba(0, 10, 0, 0.95);
+        border: 1px solid cyan;
+        padding: 10px;
+        border-radius: 5px;
+        pointer-events: none; /* Don't block mouse */
+        width: 120px;
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+    }
+    .radar-header { color: cyan; font-size: 0.7rem; letter-spacing: 1px; margin-bottom: 5px; text-align: center; border-bottom: 1px solid #333; }
+    .radar-body { display: flex; flex-direction: column; align-items: center; }
+    .radar-circle {
+        width: 60px; height: 60px;
+        border-radius: 50%;
+        border: 2px solid #333;
+        position: relative;
+        background: #000;
+        margin-bottom: 5px;
+    }
+    .radar-wedge {
+        width: 100%; height: 100%;
+        border-radius: 50%;
+        background: conic-gradient(transparent 0deg, cyan 90deg, transparent 90deg);
+        opacity: 0.5;
+        position: absolute;
+        top: 0; left: 0;
+        /* Default rotation handled by JS */
+    }
+    .radar-axis { position: absolute; background: #333; }
+    .axis-x { width: 100%; height: 1px; top: 50%; left: 0; }
+    .axis-y { width: 1px; height: 100%; left: 50%; top: 0; }
+    .radar-stats { width: 100%; font-size: 0.7rem; display: flex; justify-content: space-between; }
 </style>
 {% endblock %}
