@@ -5,68 +5,60 @@
     <div class="board-column">
         <div class="board-frame">
             <div id="quantum-board" class="board-grid"></div>
+            
+            <div id="game-over-modal" class="modal-overlay" style="display:none;">
+                <div class="modal-content">
+                    <h2 id="modal-title" style="color:cyan; text-shadow:0 0 10px cyan;">GAME COMPLETE</h2>
+                    <p id="modal-msg" style="color:white;"></p>
+                    <a href="/" class="btn-action">RETURN TO BASE</a>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="hud-column">
-        
         <div class="panel turn-panel">
-            <div class="panel-header">>> ACTIVE SIGNAL</div>
+            <div class="panel-header">>> CHRONOMETER</div>
             <div class="timer-row">
-                <div class="timer-box" id="timer-white" style="border-color: #0ff;">
-                    <div class="label">WHITE</div><div class="digits" id="digits-white">10:00</div>
-                </div>
-                <div class="timer-box" id="timer-black" style="border-color: #f70;">
-                    <div class="label">BLACK</div><div class="digits" id="digits-black">10:00</div>
-                </div>
+                <div class="timer-box" id="timer-white" style="border-color: #0ff;"><div class="label">WHITE</div><div class="digits" id="digits-white">10:00</div></div>
+                <div class="timer-box" id="timer-black" style="border-color: #f70;"><div class="label">BLACK</div><div class="digits" id="digits-black">10:00</div></div>
             </div>
-            <div id="turn-display" class="turn-status">INITIALIZING...</div>
-            <div id="ai-loader" class="blink" style="display: none; color: #0f0; text-align:center; margin-top:5px;">AI THINKING...</div>
+            <div id="turn-display" class="turn-status">...</div>
+            <div id="ai-loader" class="blink" style="display: none; color: #0f0; text-align: center;">AI COMPUTING...</div>
         </div>
 
         <div class="panel info-panel">
             <div class="info-row"><span>YOU:</span> <strong style="color:white">{{ user_color|upper }}</strong></div>
             <div class="info-row" style="margin-top:5px; border-top:1px dashed #444; padding-top:5px;">
-                <span>MODE:</span> <span style="color:cyan">{{ difficulty_name|default('SUPERPOSITION')|upper }}</span>
+                <span>MODE:</span> <span style="color:cyan">{{ difficulty_name|default('NORMAL')|upper }}</span>
             </div>
         </div>
 
         <div class="panel control-panel">
-            <div class="panel-header">>> INTERFACE</div>
             <div class="mode-switch-container">
                 <span id="mode-text" style="color: #888;">STANDARD (Swipe)</span>
-                <label class="switch">
-                    <input type="checkbox" id="quantum-toggle" onclick="toggleMode()">
-                    <span class="slider round"></span>
-                </label>
+                <label class="switch"><input type="checkbox" id="quantum-toggle" onclick="toggleMode()"><span class="slider round"></span></label>
             </div>
             <button onclick="clearSelection()" class="btn-action" style="margin-top:10px;">RESET SELECTION</button>
         </div>
         
-        <div class="panel logs-panel" id="logs"><div class="log-entry">> Connected.</div></div>
+        <div class="panel logs-panel" id="logs"><div class="log-entry">> Uplink Established.</div></div>
         
-        <div id="radar-popup" class="radar-tooltip">
-            <div class="radar-header">QUANTUM STATE</div>
-            <div class="radar-body">
-                <div class="radar-circle">
-                    <div id="radar-wedge" class="radar-wedge"></div>
-                    <div class="radar-axis axis-x"></div>
-                    <div class="radar-axis axis-y"></div>
-                </div>
-                <div class="radar-stats">
-                    <div>PROB: <span id="radar-prob" style="color:#0f0">100%</span></div>
-                    <div>PHASE: <span id="radar-phase" style="color:cyan">0°</span></div>
-                </div>
+        <div id="radar-popup" style="display:none; position:absolute; z-index:100; background:rgba(0,0,0,0.9); border:1px solid cyan; padding:10px; border-radius:5px;">
+            <div style="color:cyan; font-size:0.7rem; margin-bottom:5px;">PHASE</div>
+            <div style="width:50px; height:50px; border-radius:50%; border:1px solid #555; position:relative;">
+                <div id="radar-needle" style="width:50%; height:2px; background:cyan; position:absolute; top:50%; left:50%; transform-origin:left;"></div>
             </div>
+            <div id="radar-text" style="color:#fff; font-size:0.7rem; text-align:center;">0°</div>
         </div>
-
     </div>
 </div>
 
 <div id="game-data" data-match-id="{{ match.id }}" data-board='{{ board_data|safe }}' data-user-color="{{ user_color }}" data-turn="{{ current_turn }}" data-p1="{{ p1_time }}" data-p2="{{ p2_time }}"></div>
 
 <script>
-// ASSETS
+// (Copy previous SVGs and Constants Here...)
+// ... [Use the same SVG definitions from previous response] ...
 const SVGS = {
     'P': '<svg viewBox="0 0 100 100"><path d="M50 15 L80 85 L20 85 Z" fill="currentColor"/><rect x="42" y="30" width="16" height="30" fill="#000"/><circle cx="50" cy="45" r="4" fill="currentColor"/></svg>',
     'R': '<svg viewBox="0 0 100 100"><path d="M20 20 L40 20 L40 35 L60 35 L60 20 L80 20 L80 85 L20 85 Z" fill="currentColor"/><rect x="30" y="50" width="40" height="5" fill="#000"/></svg>',
@@ -81,7 +73,6 @@ const ROWS = ['8','7','6','5','4','3','2','1'];
 const gameData = document.getElementById('game-data');
 const matchId = gameData.dataset.matchId;
 const userColor = gameData.dataset.userColor;
-
 let currentTurn = gameData.dataset.turn;
 let boardData = JSON.parse(gameData.dataset.board);
 let p1Time = parseFloat(gameData.dataset.p1) || 600.0;
@@ -97,6 +88,10 @@ function renderBoard() {
     let rRows = (userColor === 'black') ? [...ROWS].reverse() : ROWS;
     let rCols = (userColor === 'black') ? [...COLS].reverse() : COLS;
 
+    // Turn Logic Visuals
+    const isMyTurn = (currentTurn === userColor);
+    boardEl.style.cursor = isMyTurn ? "default" : "not-allowed";
+
     rRows.forEach(row => {
         rCols.forEach(col => {
             const id = col + row;
@@ -105,18 +100,15 @@ function renderBoard() {
             sq.id = id;
             sq.classList.add((COLS.indexOf(col)+parseInt(row))%2===0 ? 'sq-dark':'sq-light');
 
-            // EVENTS
             sq.ondragover = (e) => e.preventDefault();
             sq.ondrop = (e) => handleDrop(e, id);
             sq.onclick = () => handleClick(id);
+            sq.oncontextmenu = (e) => {
+                if(boardData[id]) { e.preventDefault(); showRadar(e.pageX, e.pageY, boardData[id].phase); }
+            };
 
-            // MOUSE HOVER FOR RADAR
             if (boardData[id]) {
                 const data = boardData[id];
-                sq.onmouseenter = (e) => showRadar(e, data);
-                sq.onmouseleave = hideRadar;
-                
-                // Render Piece
                 const p = data.type || data;
                 const colorClass = (p === p.toUpperCase()) ? 'piece-white' : 'piece-black';
                 const pieceWrap = document.createElement('div');
@@ -132,57 +124,30 @@ function renderBoard() {
                     sq.appendChild(ring);
                 }
 
-                if (!isQuantumMode && currentTurn === userColor) {
+                if (!isQuantumMode && isMyTurn) {
                     pieceWrap.draggable = true;
                     pieceWrap.ondragstart = (e) => { draggedId = id; e.dataTransfer.effectAllowed = 'move'; };
                 }
                 sq.appendChild(pieceWrap);
-            } else {
-                sq.onmouseenter = hideRadar; // Ensure hides if moving to empty
             }
             boardEl.appendChild(sq);
         });
     });
     
-    // HUD
-    const turnEl = document.getElementById('turn-display');
-    turnEl.innerText = (currentTurn === 'white') ? "■ WHITE TO MOVE" : "■ BLACK TO MOVE";
-    turnEl.style.color = (currentTurn === 'white') ? "#0ff" : "#f70";
+    document.getElementById('turn-display').innerText = (currentTurn === 'white') ? "■ WHITE TO MOVE" : "■ BLACK TO MOVE";
+    document.getElementById('turn-display').style.color = (currentTurn === 'white') ? "#0ff" : "#f70";
 }
 
-// --- RADAR LOGIC ---
-function showRadar(e, data) {
+// ... (Keep standard JS logic for Radar, Drop, Click, Toggle, Log) ...
+function showRadar(x, y, phase) {
     const popup = document.getElementById('radar-popup');
-    const wedge = document.getElementById('radar-wedge');
-    const phaseText = document.getElementById('radar-phase');
-    const probText = document.getElementById('radar-prob');
-
-    // 1. Position Tooltip near mouse
-    // We add a small offset so it doesn't block the cursor
-    const x = e.clientX + 15;
-    const y = e.clientY - 50;
-    
-    popup.style.left = x + 'px';
-    popup.style.top = y + 'px';
     popup.style.display = 'block';
-
-    // 2. Update Data
-    // Phase is an angle (degrees). We rotate the wedge.
-    // CSS Conic Gradient handles the "Wedge" look.
-    // We rotate the div to point the wedge in the phase direction.
-    const phase = data.phase || 0;
-    // Wedge covers +/- 15 degrees to look like a radar sector
-    wedge.style.transform = `rotate(${phase - 45}deg)`; 
-    
-    phaseText.innerText = phase + "°";
-    probText.innerText = Math.round((data.prob || 1.0) * 100) + "%";
+    popup.style.left = x + 'px'; popup.style.top = y + 'px';
+    document.getElementById('radar-needle').style.transform = `rotate(${-phase}deg)`;
+    document.getElementById('radar-text').innerText = phase + "°";
+    setTimeout(() => { document.addEventListener('click', () => { popup.style.display = 'none'; }, {once:true}); }, 100);
 }
 
-function hideRadar() {
-    document.getElementById('radar-popup').style.display = 'none';
-}
-
-// --- MOVEMENT LOGIC (Standard) ---
 function handleDrop(e, targetId) {
     if (isQuantumMode || !draggedId || draggedId === targetId) return;
     e.preventDefault();
@@ -227,6 +192,18 @@ function toggleMode() {
     renderBoard();
 }
 
+function log(msg, color="#aaa") {
+    const b = document.getElementById('logs');
+    b.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
+    b.scrollTop = b.scrollHeight;
+}
+
+function showGameOver(winner) {
+    document.getElementById('game-over-modal').style.display = 'flex';
+    document.getElementById('modal-msg').innerText = `WINNER: ${winner.toUpperCase()}`;
+    clearInterval(timerInterval);
+}
+
 async function sendMove(moveStr) {
     clearSelection();
     log(`Sending: ${moveStr}...`);
@@ -249,20 +226,15 @@ async function sendMove(moveStr) {
             boardData = data.board_data;
             p1Time = parseFloat(data.p1_time) || p1Time;
             p2Time = parseFloat(data.p2_time) || p2Time;
-            currentTurn = data.current_turn;
+            currentTurn = data.current_turn; // Authoritative update
             renderBoard();
+            
             if(data.ai_moved) log("AI Executed Counter-Move.", "#f70");
-            if(data.game_over) alert("GAME OVER: " + data.winner.toUpperCase() + " WINS!");
+            if(data.game_over) showGameOver(data.winner);
         } else {
             log("Error: " + data.message, "#f44");
         }
     } catch(e) { document.getElementById('quantum-board').style.opacity = "1.0"; log("Connection Error", "#f44"); }
-}
-
-function log(msg, color="#aaa") {
-    const b = document.getElementById('logs');
-    b.innerHTML += `<div style="color:${color}">> ${msg}</div>`;
-    b.scrollTop = b.scrollHeight;
 }
 
 function formatTime(s) {
@@ -282,7 +254,7 @@ function startTimer() {
         document.getElementById('digits-black').innerText = formatTime(p2Time);
         document.getElementById('timer-white').style.boxShadow = (currentTurn==='white')?"0 0 15px cyan":"none";
         document.getElementById('timer-black').style.boxShadow = (currentTurn==='black')?"0 0 15px #f70":"none";
-        if(p1Time<=0 || p2Time<=0) { clearInterval(timerInterval); alert("TIME OUT"); }
+        if(p1Time<=0 || p2Time<=0) { showGameOver("TIME OUT"); }
     }, 1000);
 }
 
@@ -291,16 +263,20 @@ startTimer();
 </script>
 
 <style>
-    /* LAYOUT & BOARD */
+    /* ... (Keep same CSS as previous step) ... */
     .dashboard-wrapper { display: grid; grid-template-columns: 500px 1fr; gap: 30px; max-width: 1000px; margin: 40px auto; padding: 0 20px; }
-    .board-frame { border: 4px solid var(--primary-dim); padding: 5px; background: #000; box-shadow: 0 0 30px rgba(0,255,65,0.1); }
+    .board-frame { border: 4px solid var(--primary-dim); padding: 5px; background: #000; box-shadow: 0 0 30px rgba(0,255,65,0.1); position: relative; }
     .board-grid { display: grid; grid-template-columns: repeat(8, 1fr); width: 480px; height: 480px; }
+    
+    /* MODAL */
+    .modal-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); display:flex; justify-content:center; align-items:center; z-index:999; }
+    .modal-content { text-align:center; background:#111; border:1px solid cyan; padding:20px; box-shadow:0 0 20px cyan; }
+    
     .square { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
     .sq-light { background: #111; } .sq-dark { background: #000; }
     .sq-sel-src { background: rgba(0, 255, 255, 0.25) !important; box-shadow: inset 0 0 15px cyan; }
     .sq-sel-tgt { background: rgba(0, 255, 0, 0.25) !important; box-shadow: inset 0 0 15px lime; }
 
-    /* PIECES */
     .piece-wrapper { width: 85%; height: 85%; transition: transform 0.1s; cursor: grab; position: relative; }
     .piece-wrapper:active { transform: scale(1.1); cursor: grabbing; }
     .piece-white { color: cyan; filter: drop-shadow(0 0 5px cyan); }
@@ -311,7 +287,6 @@ startTimer();
     @keyframes ghostPulse { 0% { opacity: 0.4; } 100% { opacity: 0.8; box-shadow: 0 0 15px currentColor; } }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    /* HUD */
     .panel { background: rgba(0, 15, 0, 0.9); border: 1px solid var(--primary-dim); padding: 15px; margin-bottom: 15px; }
     .panel-header { border-bottom: 1px solid var(--primary-dim); margin-bottom: 10px; font-size: 0.8rem; color: var(--primary); letter-spacing: 2px; }
     .timer-row { display: flex; justify-content: space-between; gap: 10px; }
@@ -321,6 +296,7 @@ startTimer();
     .turn-status { text-align: center; margin-top: 10px; font-weight: bold; letter-spacing: 1px; font-size: 1.1rem; }
     .logs-panel { height: 150px; overflow-y: auto; background: #000; font-family: monospace; font-size: 0.8rem; color: var(--primary); }
     .instruction-box { background: rgba(255,255,255,0.05); padding: 10px; font-size: 0.8rem; color: #ccc; margin-top: 10px; border-left: 3px solid var(--primary); }
+    
     .mode-switch-container { display: flex; align-items: center; justify-content: space-between; }
     .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
     .switch input { opacity: 0; width: 0; height: 0; }
@@ -329,45 +305,8 @@ startTimer();
     input:checked + .slider { background-color: rgba(0, 255, 255, 0.3); border-color: cyan; }
     input:checked + .slider:before { transform: translateX(26px); background-color: cyan; box-shadow: 0 0 10px cyan; }
     .slider.round { border-radius: 24px; } .slider.round:before { border-radius: 50%; }
-    .btn-action { background: #333; color: #fff; border: 1px solid #666; padding: 5px 10px; cursor: pointer; width: 100%; }
+    .btn-action { background: #333; color: #fff; border: 1px solid #666; padding: 5px 10px; cursor: pointer; width: 100%; text-decoration: none; display: inline-block;}
     .btn-action:hover { background: #444; border-color: #fff; }
     .blink { animation: blink 1s infinite; } @keyframes blink { 50% { opacity: 0; } }
-
-    /* RADAR POPUP */
-    .radar-tooltip {
-        display: none;
-        position: fixed; /* Fixed so it doesn't get cut off */
-        z-index: 9999;
-        background: rgba(0, 10, 0, 0.95);
-        border: 1px solid cyan;
-        padding: 10px;
-        border-radius: 5px;
-        pointer-events: none; /* Don't block mouse */
-        width: 120px;
-        box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
-    }
-    .radar-header { color: cyan; font-size: 0.7rem; letter-spacing: 1px; margin-bottom: 5px; text-align: center; border-bottom: 1px solid #333; }
-    .radar-body { display: flex; flex-direction: column; align-items: center; }
-    .radar-circle {
-        width: 60px; height: 60px;
-        border-radius: 50%;
-        border: 2px solid #333;
-        position: relative;
-        background: #000;
-        margin-bottom: 5px;
-    }
-    .radar-wedge {
-        width: 100%; height: 100%;
-        border-radius: 50%;
-        background: conic-gradient(transparent 0deg, cyan 90deg, transparent 90deg);
-        opacity: 0.5;
-        position: absolute;
-        top: 0; left: 0;
-        /* Default rotation handled by JS */
-    }
-    .radar-axis { position: absolute; background: #333; }
-    .axis-x { width: 100%; height: 1px; top: 50%; left: 0; }
-    .axis-y { width: 1px; height: 100%; left: 50%; top: 0; }
-    .radar-stats { width: 100%; font-size: 0.7rem; display: flex; justify-content: space-between; }
 </style>
 {% endblock %}
