@@ -6,85 +6,32 @@
     <title>Centrale Quanta | Space-Time</title>
     <style>
         /* CORE VARIABLES (Cyberpunk Theme) */
-        :root { 
-            --primary: #0f0; 
-            --primary-dim: #004400; 
-            --bg: #000; 
-            --glow: 0 0 10px var(--primary);
-        }
-        
-        /* RESET & BASE */
-        body { 
-            background-color: var(--bg); 
-            color: var(--primary); 
-            font-family: 'Courier New', monospace; 
-            margin: 0; 
-            padding: 0; 
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+        :root { --primary: #0f0; --primary-dim: #004400; --bg: #000; --glow: 0 0 10px var(--primary); }
+        body { background-color: var(--bg); color: var(--primary); font-family: 'Courier New', monospace; margin: 0; padding: 0; min-height: 100vh; display: flex; flex-direction: column; }
 
         /* NAVIGATION */
-        nav { 
-            border-bottom: 1px solid var(--primary); 
-            background: #050505; 
-            padding: 15px 0;
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.1);
-        }
-        .container { 
-            max-width: 1100px; 
-            margin: 0 auto; 
-            padding: 0 20px; 
-        }
-        .nav-content {
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-        }
+        nav { border-bottom: 1px solid var(--primary); background: #050505; padding: 15px 0; box-shadow: 0 0 15px rgba(0, 255, 0, 0.1); }
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+        .nav-content { display: flex; justify-content: space-between; align-items: center; }
 
         /* LINKS */
         a { text-decoration: none; color: inherit; transition: all 0.3s; }
         a:hover { text-shadow: var(--glow); color: #fff; }
-
-        ul { 
-            list-style: none; 
-            display: flex; 
-            gap: 20px; 
-            margin: 0; 
-            padding: 0; 
-            align-items: center;
-        }
+        ul { list-style: none; display: flex; gap: 20px; margin: 0; padding: 0; align-items: center; }
         
         /* AUTH BUTTONS */
-        .user-badge {
-            border: 1px solid var(--primary); 
-            padding: 5px 15px; 
-            background: rgba(0,255,65,0.05);
-            font-size: 0.8rem;
-        }
-        .logout-btn { color: #ff4444 !important; }
-        .logout-btn:hover { text-shadow: 0 0 10px #ff0000; }
+        .user-badge { border: 1px solid var(--primary); padding: 5px 15px; background: rgba(0,255,65,0.05); font-size: 0.8rem; }
+        .logout-btn { color: #ff4444 !important; } .logout-btn:hover { text-shadow: 0 0 10px #ff0000; }
 
-        /* FOOTER */
-        footer { 
-            text-align: center; 
-            margin-top: auto; 
-            padding: 20px 0; 
-            color: #444; 
-            font-size: 0.8rem; 
-            border-top: 1px solid #111;
-        }
+        footer { text-align: center; margin-top: auto; padding: 20px 0; color: #444; font-size: 0.8rem; border-top: 1px solid #111; }
     </style>
 </head>
 <body>
-    
     <nav>
         <div class="container nav-content">
             <div style="font-weight: bold; font-size: 1.2rem; letter-spacing: 2px;">
                 <a href="/">[ CENTRALE QUANTA ]</a>
             </div>
-            
             <ul>
                 <li><a href="/">:: HOME ::</a></li>
                 <li><a href="/club_data">:: CLUB_DATA ::</a></li>
@@ -95,9 +42,7 @@
                         <span style="color: #666;">OPERATOR:</span>
                         <span style="font-weight: bold; color: #fff;">{{ request.state.user.username }}</span>
                     </li>
-                    <li>
-                        <a href="/auth/logout" class="logout-btn">[ DISCONNECT ]</a>
-                    </li>
+                    <li><a href="/auth/logout" class="logout-btn">[ DISCONNECT ]</a></li>
                 {% else %}
                     <li><a href="/auth/login">:: LOGIN ::</a></li>
                     <li><a href="/auth/register">:: JOIN ::</a></li>
@@ -114,6 +59,5 @@
         &copy; 2025 Centrale Quanta. Rendering Quantum State... <br>
         <small>[ SYSTEM STATUS: STABLE ]</small>
     </footer>
-
 </body>
 </html>
