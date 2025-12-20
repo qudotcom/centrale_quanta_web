@@ -1,40 +1,59 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div style="display: flex; justify-content: center;">
-    <article style="width: 100%; max-width: 400px;">
-        <header style="border-bottom: 1px solid var(--primary-dim); margin-bottom: 1rem; padding-bottom: 0.5rem;">
-            <h3>> NEW_USER_REGISTRATION</h3>
-        </header>
+<div class="auth-container">
+    <div class="auth-box">
+        <h2 style="text-align:center; margin-bottom: 20px;">>> NEW_UNIT_REGISTRY</h2>
         
         {% if error %}
-        <div style="color: red; border: 1px solid red; padding: 10px; margin-bottom: 10px; background: rgba(255,0,0,0.1);">
-            ! ERROR: {{ error }}
-        </div>
+            <div class="error-msg">ERROR: {{ error }}</div>
         {% endif %}
 
         <form action="/auth/register" method="post">
-            <div style="margin-bottom: 1rem;">
-                <label for="username">DESIGNATION (Username)</label>
-                <input type="text" id="username" name="username" placeholder="Choose a handle..." required>
+            <div class="form-group">
+                <label>ASSIGN_USERNAME</label>
+                <input type="text" name="username" required placeholder="Create ID...">
             </div>
 
-            <div style="margin-bottom: 1rem;">
-                <label for="email">COMM_LINK (Email)</label>
-                <input type="email" id="email" name="email" placeholder="student@ec-casablanca.ma" required>
+            <div class="form-group">
+                <label>CONTACT_EMAIL</label>
+                <input type="email" name="email" required placeholder="contact@domain.com">
+            </div>
+            
+            <div class="form-group">
+                <label>SET_ACCESS_CODE</label>
+                <input type="password" name="password" required placeholder="Min 6 chars...">
             </div>
 
-            <div style="margin-bottom: 1rem;">
-                <label for="password">SECURITY_KEY (Password)</label>
-                <input type="password" id="password" name="password" placeholder="******" required>
-            </div>
-
-            <button type="submit" style="width: 100%;">ESTABLISH UPLINK</button>
+            <button type="submit" class="btn full-width">REGISTER UNIT</button>
         </form>
-        
-        <div style="margin-top: 1rem; text-align: center; font-size: 0.9rem;">
-            <a href="/auth/login"><< Return to Login Sequence</a>
+
+        <div style="text-align:center; margin-top:15px; font-size: 0.8rem;">
+            <a href="/auth/login" style="color:#666;">Already Registered? Login</a>
         </div>
-    </article>
+    </div>
 </div>
+
+<style>
+    /* Reuse Login Styles */
+    .auth-container { display: flex; justify-content: center; align-items: center; min-height: 60vh; }
+    .auth-box {
+        width: 350px; background: #0a0a0a; border: 1px solid #333; padding: 30px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.8); position: relative;
+    }
+    .auth-box::before { content:''; position:absolute; top:0; left:0; width:100%; height:2px; background:var(--primary); box-shadow: 0 0 10px var(--primary); }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-size: 0.7rem; color: #888; margin-bottom: 5px; letter-spacing: 1px; }
+    
+    /* WHITE FIELDS */
+    input {
+        width: 100%; padding: 8px 10px; font-family: inherit; font-size: 0.9rem;
+        background-color: #ffffff; color: #000000;
+        border: 1px solid #ccc; border-radius: 2px; outline: none;
+    }
+    input:focus { border-color: var(--primary); }
+    
+    .full-width { width: 100%; margin-top: 10px; }
+    .error-msg { color: #ff4444; border: 1px solid #ff4444; padding: 5px; font-size: 0.8rem; margin-bottom: 15px; text-align: center; }
+</style>
 {% endblock %}
