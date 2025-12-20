@@ -7,20 +7,23 @@
         <div class="panel-header">>> SYSTEM_ADMINISTRATORS [BUREAU 2025]</div>
         
         <div class="hierarchy-level">
-            <div class="member-card leader">
+            
+            <div class="member-card president-card">
                 <div class="role">PRÉSIDENT</div>
                 <div class="name">ABDELOUAHED TAHRI</div>
-                <div class="status-light"></div>
+                <div class="status-light pulse-cyan"></div>
             </div>
-            <div class="member-card leader">
+
+            <div class="member-card vp-card">
                 <div class="role">VICE-PRÉSIDENT</div>
                 <div class="name">AMMOUR ADAM</div>
-                <div class="status-light"></div>
+                <div class="status-light pulse-gold"></div>
             </div>
-            <div class="member-card leader">
+
+            <div class="member-card sg-card">
                 <div class="role">SECRÉTAIRE GÉNÉRALE</div>
                 <div class="name">SABBAB ZINEB</div>
-                <div class="status-light"></div>
+                <div class="status-light pulse-green"></div>
             </div>
         </div>
 
@@ -68,16 +71,14 @@
     <div class="panel data-panel">
         <div class="panel-header">>> OPERATION_LOG [ACTIVITIES 2025-26]</div>
         <div class="timeline">
-            
             <div class="event-row past">
                 <div class="time-col">OCT 2025</div>
                 <div class="data-col">
                     <span class="tag">CONFERENCE</span>
-                    <strong>QUANTUM DARWINISM</strong><br>
+                    <strong>QUANTUM INFORMATION THEORY : BRIDGING THEORY AND APPLICATION</strong><br>
                     <span class="detail">:: SPEAKER: DR. AKRAM TOUIL</span>
                 </div>
             </div>
-
             <div class="event-row current">
                 <div class="time-col">DEC 2025</div>
                 <div class="data-col">
@@ -86,7 +87,6 @@
                     <span class="detail">:: Core Principles Protocol Initiated.</span>
                 </div>
             </div>
-
             <div class="event-row current">
                 <div class="time-col">DEC 2025</div>
                 <div class="data-col">
@@ -95,7 +95,6 @@
                     <span class="detail">:: Hardware Implementation Analysis.</span>
                 </div>
             </div>
-
             <div class="event-row future">
                 <div class="time-col">DEC-JAN</div>
                 <div class="data-col">
@@ -104,7 +103,6 @@
                     <span class="detail">:: The digital manifold opens for all challengers.</span>
                 </div>
             </div>
-
             <div class="event-row future">
                 <div class="time-col">2026...</div>
                 <div class="data-col">
@@ -113,136 +111,103 @@
                     <span class="detail">:: Future operations classified.</span>
                 </div>
             </div>
-
         </div>
     </div>
-
 </div>
 
 <style>
     /* LAYOUT */
     .club-wrapper { max-width: 1000px; margin: 40px auto; padding: 0 20px; font-family: 'Courier New', monospace; }
-    
-    .panel { 
-        background: rgba(0, 10, 0, 0.9); 
-        border: 1px solid var(--primary); 
-        margin-bottom: 30px; 
-        box-shadow: 0 0 20px rgba(0, 255, 65, 0.1); 
-    }
-    
-    .panel-header { 
-        background: rgba(0, 255, 65, 0.1); 
-        color: var(--primary); 
-        padding: 10px; 
-        font-weight: bold; 
-        border-bottom: 1px solid var(--primary); 
-        letter-spacing: 2px;
-    }
+    .panel { background: rgba(0, 10, 0, 0.9); border: 1px solid var(--primary); margin-bottom: 30px; box-shadow: 0 0 20px rgba(0, 255, 65, 0.1); }
+    .panel-header { background: rgba(0, 255, 65, 0.1); color: var(--primary); padding: 10px; font-weight: bold; border-bottom: 1px solid var(--primary); letter-spacing: 2px; }
 
-    /* --- STAFF STYLES --- */
+    /* --- HIERARCHY STYLES --- */
     .hierarchy-level { 
         display: flex; 
         justify-content: center; 
-        gap: 20px; 
-        padding: 20px; 
+        gap: 25px; 
+        padding: 30px; 
         border-bottom: 1px dashed #333; 
         flex-wrap: wrap;
+        align-items: flex-start; /* Align tops */
     }
+
+    /* 1. PRESIDENT (Supreme) */
+    .president-card {
+        text-align: center; width: 260px; padding: 25px;
+        border: 1px solid cyan;
+        background: linear-gradient(135deg, #001a00 0%, #003333 100%);
+        box-shadow: 0 0 25px rgba(0, 255, 255, 0.4);
+        transform: scale(1.1); /* Largest */
+        z-index: 2;
+        margin-top: 0;
+    }
+    .president-card .role { color: cyan; font-weight: bold; letter-spacing: 3px; margin-bottom: 10px; }
+    .president-card .name { font-size: 1.3rem; text-shadow: 0 0 10px cyan; color: white; }
+
+    /* 2. VICE-PRESIDENT (Elite - Gold) */
+    .vp-card {
+        text-align: center; width: 260px; padding: 20px;
+        border: 1px solid #ffcc00; /* Gold Border */
+        background: linear-gradient(135deg, #1a1500 0%, #2b2200 100%); /* Subtle Gold Tint */
+        box-shadow: 0 0 15px rgba(255, 204, 0, 0.25);
+        transform: scale(1.05); /* Middle Size */
+        z-index: 1;
+        margin-top: 10px; /* Slight visual step down */
+    }
+    .vp-card .role { color: #ffcc00; font-weight: bold; letter-spacing: 2px; margin-bottom: 8px; }
+    .vp-card .name { font-size: 1.1rem; color: #fff; text-shadow: 0 0 5px #ffcc00; }
+
+    /* 3. SG (Standard Command - Green) */
+    .sg-card {
+        text-align: center; width: 260px; padding: 20px;
+        border: 1px solid var(--primary); /* Standard Green */
+        background: #050505;
+        box-shadow: 0 0 10px rgba(0, 255, 65, 0.15);
+        transform: scale(1.0); /* Normal Size */
+        margin-top: 20px; /* Step down from VP */
+    }
+    .sg-card .role { color: var(--primary); font-weight: normal; letter-spacing: 2px; margin-bottom: 8px; }
+    .sg-card .name { font-size: 1.1rem; color: #fff; }
+
+    /* --- PULSE ANIMATIONS --- */
+    .status-light { width: 8px; height: 8px; border-radius: 50%; position: absolute; top: 10px; right: 10px; }
     
-    .staff-grid { 
-        display: grid; 
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-        gap: 20px; 
-        padding: 20px; 
-    }
+    .pulse-cyan { background: cyan; animation: pulse-c 2s infinite; }
+    @keyframes pulse-c { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 255, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 255, 0); } }
 
-    .dept-group {
-        border: 1px solid #333;
-        padding: 10px;
-        background: rgba(0,20,0,0.3);
-    }
+    .pulse-gold { background: #ffcc00; animation: pulse-g 2s infinite; }
+    @keyframes pulse-g { 0% { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 204, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 204, 0, 0); } }
 
-    .dept-title {
-        font-size: 0.7rem;
-        color: #888;
-        margin-bottom: 10px;
-        border-bottom: 1px solid #333;
-    }
+    .pulse-green { background: #0f0; animation: pulse-gr 2s infinite; }
+    @keyframes pulse-gr { 0% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(0, 255, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 255, 0, 0); } }
 
+    /* --- STANDARD STAFF STYLES --- */
+    .staff-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; padding: 20px; }
+    .dept-group { border: 1px solid #333; padding: 10px; background: rgba(0,20,0,0.3); }
+    .dept-title { font-size: 0.7rem; color: #888; margin-bottom: 10px; border-bottom: 1px solid #333; }
+    
     .member-card { 
-        border-left: 2px solid #333; 
-        padding: 8px 15px; 
-        background: #050505; 
-        margin-bottom: 5px;
-        transition: all 0.3s; 
-        position: relative;
+        border-left: 2px solid #333; padding: 8px 15px; background: #050505; 
+        margin-bottom: 5px; transition: all 0.3s; position: relative; 
     }
-    
-    .member-card:hover { 
-        border-left-color: cyan; 
-        background: #0a0a0a;
-        padding-left: 20px;
-        color: cyan;
+    /* Specific check to ensure hover effect doesn't break leaders */
+    .member-card:not(.president-card):not(.vp-card):not(.sg-card):hover { 
+        border-left-color: cyan; background: #0a0a0a; padding-left: 20px; color: cyan; 
     }
-
-    .member-card.leader { 
-        border: 1px solid var(--primary); 
-        text-align: center;
-        width: 250px;
-        padding: 15px;
-    }
-    
-    .role { font-size: 0.7rem; color: #888; letter-spacing: 1px; margin-bottom: 5px; }
     .name { font-size: 1rem; color: #fff; font-weight: bold; }
-    
-    .status-light {
-        width: 8px; height: 8px; background: #0f0; border-radius: 50%;
-        position: absolute; top: 10px; right: 10px;
-        box-shadow: 0 0 5px #0f0;
-    }
 
-    /* --- TIMELINE STYLES --- */
+    /* --- TIMELINE --- */
     .timeline { padding: 20px; }
-    
-    .event-row { 
-        display: flex; 
-        border-left: 2px solid #333; 
-        padding-left: 20px; 
-        margin-bottom: 25px; 
-        position: relative; 
-    }
-    
-    .event-row::before {
-        content: ''; position: absolute; left: -6px; top: 0;
-        width: 10px; height: 10px; background: #000; border: 2px solid #333;
-    }
-    
+    .event-row { display: flex; border-left: 2px solid #333; padding-left: 20px; margin-bottom: 25px; position: relative; }
+    .event-row::before { content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; background: #000; border: 2px solid #333; }
     .event-row.current { border-left-color: var(--primary); }
     .event-row.current::before { border-color: var(--primary); background: var(--primary); box-shadow: 0 0 10px var(--primary); }
-    
     .event-row.future::before { border-color: cyan; background: #000; box-shadow: 0 0 5px cyan; }
-
-    .time-col { 
-        width: 100px; 
-        font-size: 0.9rem; 
-        color: #888; 
-        padding-top: 2px;
-        flex-shrink: 0;
-    }
-    
+    .time-col { width: 100px; font-size: 0.9rem; color: #888; padding-top: 2px; flex-shrink: 0; }
     .data-col { flex-grow: 1; }
-    
-    .tag { 
-        display: inline-block; 
-        font-size: 0.6rem; 
-        border: 1px solid #555; 
-        padding: 2px 5px; 
-        color: #aaa; 
-        margin-bottom: 5px; 
-    }
+    .tag { display: inline-block; font-size: 0.6rem; border: 1px solid #555; padding: 2px 5px; color: #aaa; margin-bottom: 5px; }
     .tag.active { border-color: cyan; color: cyan; }
-    
     .detail { color: #666; font-size: 0.8rem; display: block; margin-top: 3px; }
-
 </style>
 {% endblock %}
