@@ -1,136 +1,248 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div style="max-width: 900px; margin: 0 auto;">
+<div class="club-wrapper">
     
-    <div style="border-bottom: 2px solid var(--primary); margin-bottom: 2rem; padding-bottom: 1rem;">
-        <h2>> CLUB_MANIFEST</h2>
-        <p style="color: var(--primary-dim);">// CENTRALE QUANTA PERSONNEL & LOGS</p>
+    <div class="panel system-panel">
+        <div class="panel-header">>> SYSTEM_ADMINISTRATORS [BUREAU 2025]</div>
+        
+        <div class="hierarchy-level">
+            <div class="member-card leader">
+                <div class="role">PRÉSIDENT</div>
+                <div class="name">ABDELOUAHED TAHRI</div>
+                <div class="status-light"></div>
+            </div>
+            <div class="member-card leader">
+                <div class="role">VICE-PRÉSIDENT</div>
+                <div class="name">AMMOUR ADAM</div>
+                <div class="status-light"></div>
+            </div>
+            <div class="member-card leader">
+                <div class="role">SECRÉTAIRE GÉNÉRALE</div>
+                <div class="name">SABBAB ZINEB</div>
+                <div class="status-light"></div>
+            </div>
+        </div>
+
+        <div class="staff-grid">
+            
+            <div class="dept-group">
+                <div class="dept-title">>> UNIT: PROSPECTION</div>
+                <div class="member-card"><div class="name">MOUSSA OUMAR DIANKA</div></div>
+                <div class="member-card"><div class="name">OMAR MAKALOU</div></div>
+            </div>
+
+            <div class="dept-group">
+                <div class="dept-title">>> UNIT: LOGISTIQUE</div>
+                <div class="member-card"><div class="name">SARA AZOUGGAGH</div></div>
+                <div class="member-card"><div class="name">AOUZID ILYASS</div></div>
+                <div class="member-card"><div class="name">KA MOHAMED MOCTAR</div></div>
+            </div>
+
+            <div class="dept-group">
+                <div class="dept-title">>> UNIT: FORMATION</div>
+                <div class="member-card"><div class="name">CHEBAICHEB OUSSAMA</div></div>
+                <div class="member-card"><div class="name">LOMPO BAMPALOU ERNEST</div></div>
+            </div>
+
+            <div class="dept-group">
+                <div class="dept-title">>> UNIT: COMMUNICATION</div>
+                <div class="member-card"><div class="name">MEITE SAYD AHMED</div></div>
+                <div class="member-card"><div class="name">MAMATH YACINE NIANG</div></div>
+            </div>
+
+            <div class="dept-group">
+                <div class="dept-title">>> UNIT: EVENEMENTIEL</div>
+                <div class="member-card"><div class="name">ALABI GORDON</div></div>
+                <div class="member-card"><div class="name">CHEBLI MOHAMED</div></div>
+            </div>
+
+            <div class="dept-group">
+                <div class="dept-title">>> UNIT: DESIGN</div>
+                <div class="member-card"><div class="name">KAMILI EL HOUSSINE</div></div>
+            </div>
+
+        </div>
     </div>
 
-    <h3 style="margin-bottom: 1.5rem;">:: HIGH COUNCIL (Board Members) ::</h3>
-    <div class="members-grid">
-        {% for member in members %}
-        <div class="member-card">
-            <div class="card-header">
-                <span class="role-badge">{{ member.role }}</span>
-            </div>
-            <div class="card-body">
-                <div class="avatar-placeholder">
-                    [ IMG_NOT_FOUND ]
+    <div class="panel data-panel">
+        <div class="panel-header">>> OPERATION_LOG [ACTIVITIES 2025-26]</div>
+        <div class="timeline">
+            
+            <div class="event-row past">
+                <div class="time-col">OCT 2025</div>
+                <div class="data-col">
+                    <span class="tag">CONFERENCE</span>
+                    <strong>QUANTUM DARWINISM</strong><br>
+                    <span class="detail">:: SPEAKER: DR. AKRAM TOUIL</span>
                 </div>
-                <h4>{{ member.name }}</h4>
-                <p class="bio">"{{ member.bio }}"</p>
             </div>
-        </div>
-        {% endfor %}
-    </div>
 
-    <h3 style="margin-top: 4rem; margin-bottom: 1.5rem;">:: MISSION LOGS (Activities) ::</h3>
-    <div class="activities-list">
-        {% for activity in activities %}
-        <div class="activity-row">
-            <div class="date-stamp">{{ activity.date }}</div>
-            <div class="activity-details">
-                <div class="activity-title">{{ activity.title }}</div>
-                <div class="activity-desc">{{ activity.description }}</div>
+            <div class="event-row current">
+                <div class="time-col">DEC 2025</div>
+                <div class="data-col">
+                    <span class="tag">WORKSHOP_01</span>
+                    <strong>FUNDAMENTALS OF QUANTUM PHYSICS AND COMPUTING</strong><br>
+                    <span class="detail">:: Core Principles Protocol Initiated.</span>
+                </div>
             </div>
+
+            <div class="event-row current">
+                <div class="time-col">DEC 2025</div>
+                <div class="data-col">
+                    <span class="tag">WORKSHOP_02</span>
+                    <strong>QUANTUM TECHNOLOGIES</strong><br>
+                    <span class="detail">:: Hardware Implementation Analysis.</span>
+                </div>
+            </div>
+
+            <div class="event-row future">
+                <div class="time-col">DEC-JAN</div>
+                <div class="data-col">
+                    <span class="tag active">COMPETITION</span>
+                    <strong style="color:cyan; text-shadow: 0 0 5px cyan;">QUANTUM CHESS COMPETITION</strong><br>
+                    <span class="detail">:: The digital manifold opens for all challengers.</span>
+                </div>
+            </div>
+
+            <div class="event-row future">
+                <div class="time-col">2026...</div>
+                <div class="data-col">
+                    <span class="tag">PENDING</span>
+                    <strong>CONFERENCES + WORKSHOPS</strong><br>
+                    <span class="detail">:: Future operations classified.</span>
+                </div>
+            </div>
+
         </div>
-        {% endfor %}
     </div>
 
 </div>
 
 <style>
-    /* Grid for Members */
-    .members-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 2rem;
+    /* LAYOUT */
+    .club-wrapper { max-width: 1000px; margin: 40px auto; padding: 0 20px; font-family: 'Courier New', monospace; }
+    
+    .panel { 
+        background: rgba(0, 10, 0, 0.9); 
+        border: 1px solid var(--primary); 
+        margin-bottom: 30px; 
+        box-shadow: 0 0 20px rgba(0, 255, 65, 0.1); 
+    }
+    
+    .panel-header { 
+        background: rgba(0, 255, 65, 0.1); 
+        color: var(--primary); 
+        padding: 10px; 
+        font-weight: bold; 
+        border-bottom: 1px solid var(--primary); 
+        letter-spacing: 2px;
     }
 
-    .member-card {
-        border: 1px solid var(--primary-dim);
-        background: rgba(0, 10, 0, 0.5);
-        transition: 0.3s;
+    /* --- STAFF STYLES --- */
+    .hierarchy-level { 
+        display: flex; 
+        justify-content: center; 
+        gap: 20px; 
+        padding: 20px; 
+        border-bottom: 1px dashed #333; 
+        flex-wrap: wrap;
+    }
+    
+    .staff-grid { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+        gap: 20px; 
+        padding: 20px; 
     }
 
-    .member-card:hover {
-        border-color: var(--primary);
-        box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+    .dept-group {
+        border: 1px solid #333;
+        padding: 10px;
+        background: rgba(0,20,0,0.3);
     }
 
-    .card-header {
-        background: var(--primary-dim);
-        color: black;
-        padding: 5px 10px;
-        text-align: right;
-        font-weight: bold;
-        font-size: 0.8rem;
-    }
-
-    .card-body {
-        padding: 1.5rem;
-        text-align: center;
-    }
-
-    .avatar-placeholder {
-        width: 80px;
-        height: 80px;
-        border: 1px dashed var(--primary);
-        margin: 0 auto 1rem auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .dept-title {
         font-size: 0.7rem;
-        color: var(--primary-dim);
-        border-radius: 50%;
+        color: #888;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #333;
     }
 
-    .bio {
-        font-style: italic;
-        color: #aaa;
-        font-size: 0.9rem;
-        margin-top: 10px;
-    }
-
-    /* List for Activities */
-    .activity-row {
-        display: flex;
-        gap: 2rem;
-        border-left: 2px solid var(--primary-dim);
-        padding-left: 1.5rem;
-        margin-bottom: 2rem;
+    .member-card { 
+        border-left: 2px solid #333; 
+        padding: 8px 15px; 
+        background: #050505; 
+        margin-bottom: 5px;
+        transition: all 0.3s; 
         position: relative;
     }
-
-    .activity-row::before {
-        content: "";
-        position: absolute;
-        left: -6px;
-        top: 0;
-        width: 10px;
-        height: 10px;
-        background: black;
-        border: 2px solid var(--primary);
-        border-radius: 50%;
+    
+    .member-card:hover { 
+        border-left-color: cyan; 
+        background: #0a0a0a;
+        padding-left: 20px;
+        color: cyan;
     }
 
-    .date-stamp {
-        font-family: 'Courier New', monospace;
-        color: var(--primary);
-        font-weight: bold;
-        min-width: 100px;
+    .member-card.leader { 
+        border: 1px solid var(--primary); 
+        text-align: center;
+        width: 250px;
+        padding: 15px;
+    }
+    
+    .role { font-size: 0.7rem; color: #888; letter-spacing: 1px; margin-bottom: 5px; }
+    .name { font-size: 1rem; color: #fff; font-weight: bold; }
+    
+    .status-light {
+        width: 8px; height: 8px; background: #0f0; border-radius: 50%;
+        position: absolute; top: 10px; right: 10px;
+        box-shadow: 0 0 5px #0f0;
     }
 
-    .activity-title {
-        font-size: 1.2rem;
-        font-weight: bold;
-        margin-bottom: 0.5rem;
+    /* --- TIMELINE STYLES --- */
+    .timeline { padding: 20px; }
+    
+    .event-row { 
+        display: flex; 
+        border-left: 2px solid #333; 
+        padding-left: 20px; 
+        margin-bottom: 25px; 
+        position: relative; 
     }
+    
+    .event-row::before {
+        content: ''; position: absolute; left: -6px; top: 0;
+        width: 10px; height: 10px; background: #000; border: 2px solid #333;
+    }
+    
+    .event-row.current { border-left-color: var(--primary); }
+    .event-row.current::before { border-color: var(--primary); background: var(--primary); box-shadow: 0 0 10px var(--primary); }
+    
+    .event-row.future::before { border-color: cyan; background: #000; box-shadow: 0 0 5px cyan; }
 
-    .activity-desc {
-        color: #ccc;
+    .time-col { 
+        width: 100px; 
+        font-size: 0.9rem; 
+        color: #888; 
+        padding-top: 2px;
+        flex-shrink: 0;
     }
+    
+    .data-col { flex-grow: 1; }
+    
+    .tag { 
+        display: inline-block; 
+        font-size: 0.6rem; 
+        border: 1px solid #555; 
+        padding: 2px 5px; 
+        color: #aaa; 
+        margin-bottom: 5px; 
+    }
+    .tag.active { border-color: cyan; color: cyan; }
+    
+    .detail { color: #666; font-size: 0.8rem; display: block; margin-top: 3px; }
+
 </style>
 {% endblock %}
